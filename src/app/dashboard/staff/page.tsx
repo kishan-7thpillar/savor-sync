@@ -458,14 +458,6 @@ export default function StaffManagementPage() {
               <Calendar className="h-4 w-4 mr-2" />
               Shifts & Costs
             </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center">
-              <BarChart3 className="h-4 w-4 mr-2" />
-              Analytics
-            </TabsTrigger>
-            <TabsTrigger value="calendar" className="flex items-center">
-              <Calendar className="h-4 w-4 mr-2" />
-              Calendar
-            </TabsTrigger>
           </TabsList>
 
           <div className="flex items-center space-x-2">
@@ -645,232 +637,6 @@ export default function StaffManagementPage() {
         <TabsContent value="shifts" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Recent Shifts</CardTitle>
-              <CardDescription>
-                Staff shifts with cost breakdown and tips
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {shifts.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No shift data available.
-                  </div>
-                ) : (
-                  shifts.map((shift: any) => {
-                    const teamMember = staff.find(
-                      (s) => s.id === shift.team_member_id
-                    );
-                    const startTime = new Date(shift.start_at);
-                    const endTime = new Date(shift.end_at);
-                    const duration =
-                      (endTime.getTime() - startTime.getTime()) /
-                      (1000 * 60 * 60);
-                    const hourlyRate = shift.wage.hourly_rate.amount / 100;
-                    const shiftCost = duration * hourlyRate;
-                    const tips = shift.declared_cash_tip_money.amount / 100;
-
-                    return (
-                      <div
-                        key={shift.id}
-                        className="flex items-center justify-between p-4 border rounded-lg"
-                      >
-                        <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <div className="font-medium">
-                              {teamMember?.fullName || "Unknown Staff"}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {shift.wage.title} •{" "}
-                              {startTime.toLocaleDateString()}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {startTime.toLocaleTimeString()} -{" "}
-                              {endTime.toLocaleTimeString()}
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <Badge
-                              variant={
-                                shift.status === "CLOSED"
-                                  ? "default"
-                                  : "secondary"
-                              }
-                            >
-                              {shift.status}
-                            </Badge>
-                          </div>
-                          <div className="text-sm font-medium">
-                            {formatCurrency(shiftCost)} labor
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {duration.toFixed(1)}h @{" "}
-                            {formatCurrency(hourlyRate)}/hr
-                          </div>
-                          {tips > 0 && (
-                            <div className="text-xs text-green-600">
-                              +{formatCurrency(tips)} tips
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Staff Cost Breakdown</CardTitle>
-                <CardDescription>
-                  Individual staff member costs and hours
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {staff
-                    .filter((member) => member.shiftMetrics?.totalShifts > 0)
-                    .map((member: any) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-blue-500" />
-                          <span className="text-sm font-medium">
-                            {member.fullName}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium">
-                            {formatCurrency(member.shiftMetrics.totalCost)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {member.shiftMetrics.totalHours}h •{" "}
-                            {member.shiftMetrics.totalShifts} shifts
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Tips Summary</CardTitle>
-                <CardDescription>Tips earned by staff members</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {staff
-                    .filter((member) => member.shiftMetrics?.totalTips > 0)
-                    .map((member: any) => (
-                      <div
-                        key={member.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <div className="w-3 h-3 rounded-full bg-green-500" />
-                          <span className="text-sm font-medium">
-                            {member.fullName}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-medium text-green-600">
-                            {formatCurrency(member.shiftMetrics.totalTips)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {member.shiftMetrics.totalShifts} shifts
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="analytics" className="space-y-4">
-          <div className="grid gap-6 md:grid-cols-2">
-            <Card>
-              <CardHeader>
-                <CardTitle>Staff by Position</CardTitle>
-                <CardDescription>
-                  Distribution of team members by job title
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {analytics.byPosition.map((position: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-primary" />
-                        <span className="text-sm font-medium">
-                          {position.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">
-                          {position.count} members
-                        </span>
-                        <Badge variant="outline">{position.percentage}%</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Staff by Status</CardTitle>
-                <CardDescription>
-                  Active vs inactive team members
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {analytics.byStatus.map((status: any, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        <span className="text-sm font-medium">
-                          {status.name}
-                        </span>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-muted-foreground">
-                          {status.count} members
-                        </span>
-                        <Badge variant="outline">{status.percentage}%</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="calendar" className="space-y-4">
-          <Card>
-            <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Staff Schedule Calendar</CardTitle>
@@ -925,10 +691,20 @@ export default function StaffManagementPage() {
                       const date = new Date(calendarDate);
                       date.setDate(date.getDate() - date.getDay() + i);
                       return (
-                        <div key={i} className="font-semibold text-sm p-2 bg-muted rounded text-center">
-                          <div>{date.toLocaleDateString('en-US', { weekday: 'short' })}</div>
+                        <div
+                          key={i}
+                          className="font-semibold text-sm p-2 bg-muted rounded text-center"
+                        >
+                          <div>
+                            {date.toLocaleDateString("en-US", {
+                              weekday: "short",
+                            })}
+                          </div>
                           <div className="text-xs text-muted-foreground">
-                            {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {date.toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                            })}
                           </div>
                         </div>
                       );
@@ -945,46 +721,68 @@ export default function StaffManagementPage() {
                             <Users className="h-4 w-4 text-primary" />
                           </div>
                           <div>
-                            <div className="font-medium text-sm">{employee.fullName}</div>
-                            <div className="text-xs text-muted-foreground">{employee.position}</div>
+                            <div className="font-medium text-sm">
+                              {employee.fullName}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {employee.position}
+                            </div>
                           </div>
                         </div>
 
                         {/* Date Columns */}
                         {Array.from({ length: 7 }, (_, dayIndex) => {
                           const date = new Date(calendarDate);
-                          date.setDate(date.getDate() - date.getDay() + dayIndex);
-                          
+                          date.setDate(
+                            date.getDate() - date.getDay() + dayIndex
+                          );
+
                           // Find shifts for this employee on this date
-                          const dayShifts = shifts.filter(shift => {
+                          const dayShifts = shifts.filter((shift) => {
                             const shiftDate = new Date(shift.start_at);
-                            return shift.team_member_id === employee.id &&
-                                   shiftDate.toDateString() === date.toDateString();
+                            return (
+                              shift.team_member_id === employee.id &&
+                              shiftDate.toDateString() === date.toDateString()
+                            );
                           });
 
                           return (
-                            <div key={dayIndex} className="p-2 border rounded min-h-[80px] bg-background">
+                            <div
+                              key={dayIndex}
+                              className="p-2 border rounded min-h-[80px] bg-background"
+                            >
                               {dayShifts.length > 0 ? (
                                 <div className="space-y-1">
                                   {dayShifts.map((shift, shiftIndex) => {
                                     const startTime = new Date(shift.start_at);
                                     const endTime = new Date(shift.end_at);
-                                    const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                                    const hourlyRate = shift.wage.hourly_rate.amount / 100;
+                                    const duration =
+                                      (endTime.getTime() -
+                                        startTime.getTime()) /
+                                      (1000 * 60 * 60);
+                                    const hourlyRate =
+                                      shift.wage.hourly_rate.amount / 100;
                                     const shiftCost = duration * hourlyRate;
-                                    const tips = shift.declared_cash_tip_money.amount / 100;
+                                    const tips =
+                                      shift.declared_cash_tip_money.amount /
+                                      100;
 
                                     return (
                                       <div key={shiftIndex} className="text-xs">
                                         <div className="font-medium text-blue-600">
-                                          {startTime.toLocaleTimeString('en-US', { 
-                                            hour: 'numeric', 
-                                            minute: '2-digit',
-                                            hour12: true 
-                                          })} - {endTime.toLocaleTimeString('en-US', { 
-                                            hour: 'numeric', 
-                                            minute: '2-digit',
-                                            hour12: true 
+                                          {startTime.toLocaleTimeString(
+                                            "en-US",
+                                            {
+                                              hour: "numeric",
+                                              minute: "2-digit",
+                                              hour12: true,
+                                            }
+                                          )}{" "}
+                                          -{" "}
+                                          {endTime.toLocaleTimeString("en-US", {
+                                            hour: "numeric",
+                                            minute: "2-digit",
+                                            hour12: true,
                                           })}
                                         </div>
                                         <div className="text-green-600 font-medium">
@@ -1020,79 +818,114 @@ export default function StaffManagementPage() {
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div className="text-center">
                         <div className="text-2xl font-bold text-blue-600">
-                          {shifts.filter(shift => {
-                            const shiftDate = new Date(shift.start_at);
-                            const weekStart = new Date(calendarDate);
-                            weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-                            const weekEnd = new Date(weekStart);
-                            weekEnd.setDate(weekEnd.getDate() + 6);
-                            return shiftDate >= weekStart && shiftDate <= weekEnd;
-                          }).length}
+                          {
+                            shifts.filter((shift) => {
+                              const shiftDate = new Date(shift.start_at);
+                              const weekStart = new Date(calendarDate);
+                              weekStart.setDate(
+                                weekStart.getDate() - weekStart.getDay()
+                              );
+                              const weekEnd = new Date(weekStart);
+                              weekEnd.setDate(weekEnd.getDate() + 6);
+                              return (
+                                shiftDate >= weekStart && shiftDate <= weekEnd
+                              );
+                            }).length
+                          }
                         </div>
-                        <div className="text-sm text-muted-foreground">Total Shifts</div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Shifts
+                        </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-green-600">
                           {formatCurrency(
                             shifts
-                              .filter(shift => {
+                              .filter((shift) => {
                                 const shiftDate = new Date(shift.start_at);
                                 const weekStart = new Date(calendarDate);
-                                weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                                weekStart.setDate(
+                                  weekStart.getDate() - weekStart.getDay()
+                                );
                                 const weekEnd = new Date(weekStart);
                                 weekEnd.setDate(weekEnd.getDate() + 6);
-                                return shiftDate >= weekStart && shiftDate <= weekEnd;
+                                return (
+                                  shiftDate >= weekStart && shiftDate <= weekEnd
+                                );
                               })
                               .reduce((total, shift) => {
                                 const startTime = new Date(shift.start_at);
                                 const endTime = new Date(shift.end_at);
-                                const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-                                const hourlyRate = shift.wage.hourly_rate.amount / 100;
-                                return total + (duration * hourlyRate);
+                                const duration =
+                                  (endTime.getTime() - startTime.getTime()) /
+                                  (1000 * 60 * 60);
+                                const hourlyRate =
+                                  shift.wage.hourly_rate.amount / 100;
+                                return total + duration * hourlyRate;
                               }, 0)
                           )}
                         </div>
-                        <div className="text-sm text-muted-foreground">Labor Cost</div>
+                        <div className="text-sm text-muted-foreground">
+                          Labor Cost
+                        </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-purple-600">
                           {shifts
-                            .filter(shift => {
+                            .filter((shift) => {
                               const shiftDate = new Date(shift.start_at);
                               const weekStart = new Date(calendarDate);
-                              weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                              weekStart.setDate(
+                                weekStart.getDate() - weekStart.getDay()
+                              );
                               const weekEnd = new Date(weekStart);
                               weekEnd.setDate(weekEnd.getDate() + 6);
-                              return shiftDate >= weekStart && shiftDate <= weekEnd;
+                              return (
+                                shiftDate >= weekStart && shiftDate <= weekEnd
+                              );
                             })
                             .reduce((total, shift) => {
                               const startTime = new Date(shift.start_at);
                               const endTime = new Date(shift.end_at);
-                              const duration = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+                              const duration =
+                                (endTime.getTime() - startTime.getTime()) /
+                                (1000 * 60 * 60);
                               return total + duration;
                             }, 0)
-                            .toFixed(1)}h
+                            .toFixed(1)}
+                          h
                         </div>
-                        <div className="text-sm text-muted-foreground">Total Hours</div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Hours
+                        </div>
                       </div>
                       <div className="text-center">
                         <div className="text-2xl font-bold text-orange-600">
                           {formatCurrency(
                             shifts
-                              .filter(shift => {
+                              .filter((shift) => {
                                 const shiftDate = new Date(shift.start_at);
                                 const weekStart = new Date(calendarDate);
-                                weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                                weekStart.setDate(
+                                  weekStart.getDate() - weekStart.getDay()
+                                );
                                 const weekEnd = new Date(weekStart);
                                 weekEnd.setDate(weekEnd.getDate() + 6);
-                                return shiftDate >= weekStart && shiftDate <= weekEnd;
+                                return (
+                                  shiftDate >= weekStart && shiftDate <= weekEnd
+                                );
                               })
                               .reduce((total, shift) => {
-                                return total + (shift.declared_cash_tip_money.amount / 100);
+                                return (
+                                  total +
+                                  shift.declared_cash_tip_money.amount / 100
+                                );
                               }, 0)
                           )}
                         </div>
-                        <div className="text-sm text-muted-foreground">Total Tips</div>
+                        <div className="text-sm text-muted-foreground">
+                          Total Tips
+                        </div>
                       </div>
                     </div>
                   </div>
