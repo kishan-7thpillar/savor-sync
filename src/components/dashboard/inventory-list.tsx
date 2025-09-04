@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious } from '@/components/ui/pagination'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { InventoryForm } from '@/components/forms/inventory-form'
-import { Edit, Trash2, MoreHorizontal, AlertTriangle, CheckCircle } from 'lucide-react'
+import { Edit, Trash2, MoreHorizontal, AlertTriangle, CheckCircle, Settings } from 'lucide-react'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 
@@ -30,9 +30,10 @@ interface InventoryItem {
 
 interface InventoryListProps {
   locationFilter?: string
+  onManualUpdate?: (itemId: string) => void
 }
 
-export function InventoryList({ locationFilter = 'all' }: InventoryListProps) {
+export function InventoryList({ locationFilter = 'all', onManualUpdate }: InventoryListProps) {
   const [items, setItems] = useState<InventoryItem[]>([])
   const [loading, setLoading] = useState(true)
   const [currentPage, setCurrentPage] = useState(1)
@@ -300,6 +301,12 @@ export function InventoryList({ locationFilter = 'all' }: InventoryListProps) {
                                 Edit
                               </DropdownMenuItem>
                             </DialogTrigger>
+                            {onManualUpdate && (
+                              <DropdownMenuItem onSelect={() => onManualUpdate(item.id)}>
+                                <Settings className="mr-2 h-4 w-4" />
+                                Manual Update
+                              </DropdownMenuItem>
+                            )}
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <DropdownMenuItem onSelect={(e) => e.preventDefault()}>

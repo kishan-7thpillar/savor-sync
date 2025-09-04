@@ -5,14 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  PlusCircle,
   Package,
   Package2,
-  BarChart3,
-  History,
-  Download,
-  Search,
   Filter,
+  History,
+  BarChart3,
+  Search,
+  Download,
+  PlusCircle,
+  Settings,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -30,7 +31,10 @@ import { BulkActions } from "@/components/dashboard/bulk-actions";
 import { InventoryCategories } from "@/components/dashboard/inventory-categories";
 import { InventoryOrders } from "@/components/dashboard/inventory-orders";
 import { InventoryReports } from "@/components/dashboard/inventory-reports";
+import { InventoryLogsTable } from "@/components/dashboard/inventory-logs-table";
+import { ManualInventoryUpdateForm } from "@/components/forms/manual-inventory-update-form";
 import { Product, Ingredient } from "@/types/square";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export default function InventoryPage() {
   const [showAddItem, setShowAddItem] = useState(false);
@@ -42,6 +46,8 @@ export default function InventoryPage() {
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [showManualUpdate, setShowManualUpdate] = useState(false);
+  const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
 
   const handleAddItemSuccess = () => {
     setShowAddItem(false);
@@ -82,6 +88,17 @@ export default function InventoryPage() {
 
   const handleSelectionChange = (selectedIds: string[]) => {
     setSelectedItems(selectedIds);
+  };
+
+  const handleManualUpdate = (ingredientId: string) => {
+    setSelectedIngredientId(ingredientId);
+    setShowManualUpdate(true);
+  };
+
+  const handleManualUpdateSuccess = () => {
+    setShowManualUpdate(false);
+    setSelectedIngredientId(null);
+    setRefreshTrigger((prev) => prev + 1);
   };
 
   // Mock data for bulk actions
@@ -184,6 +201,10 @@ export default function InventoryPage() {
               <BarChart3 className="mr-2 h-4 w-4" />
               Reports
             </TabsTrigger>
+            <TabsTrigger value="logs" className="flex items-center">
+              <History className="mr-2 h-4 w-4" />
+              Inventory Logs
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -274,6 +295,16 @@ export default function InventoryPage() {
               <Download className="mr-2 h-4 w-4" />
               Bulk Actions
             </Button>
+            {activeTab === "ingredients" && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowManualUpdate(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Manual Update
+              </Button>
+            )}
           </div>
         </div>
 
@@ -318,6 +349,7 @@ export default function InventoryPage() {
                 stockFilter={stockFilter}
                 selectedItems={selectedItems}
                 onSelectionChange={handleSelectionChange}
+                onManualUpdate={handleManualUpdate}
                 refreshTrigger={refreshTrigger}
               />
             </div>
@@ -346,7 +378,28 @@ export default function InventoryPage() {
         <TabsContent value="reports" className="space-y-4 mt-4">
           <InventoryReports />
         </TabsContent>
+
+        <TabsContent value="logs" className="space-y-4 mt-4">
+          <InventoryLogsTable 
+            locationId={selectedLocation !== 'all' ? selectedLocation : undefined}
+          />
+        </TabsContent>
       </Tabs>
+
+      {/* Manual Inventory Update Dialog */}
+      <Dialog open={showManualUpdate} onOpenChange={setShowManualUpdate}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Manual Inventory Update</DialogTitle>
+          </DialogHeader>
+          <ManualInventoryUpdateForm
+            preselectedIngredientId={selectedIngredientId || undefined}
+            preselectedLocationId={selectedLocation !== 'all' ? selectedLocation : undefined}
+            onSuccess={handleManualUpdateSuccess}
+            onCancel={() => setShowManualUpdate(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

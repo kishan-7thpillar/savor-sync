@@ -114,6 +114,11 @@ export class InventoryManagementService {
         }
       }
 
+      // 4. Create inventory log entry for automatic updates
+      if (updatedIngredients.length > 0) {
+        await this.createInventoryLog(orderId, locationId, updatedIngredients, 'AUTO');
+      }
+
       return {
         success: true,
         message: `Successfully updated inventory for ${updatedIngredients.length} ingredients`,
@@ -238,6 +243,45 @@ export class InventoryManagementService {
     } catch (error) {
       console.error("❌ Error updating ingredient inventory:", error);
       return null;
+    }
+  }
+
+  /**
+   * Create an inventory log entry
+   * @param orderId Order ID (optional for manual updates)
+   * @param locationId Location ID
+   * @param updatedIngredients Array of ingredient updates
+   * @param type Type of update ('AUTO' or 'MANUAL')
+   * @param reason Reason for manual updates
+   */
+  async createInventoryLog(
+    orderId: string | null,
+    locationId: string,
+    updatedIngredients: IngredientUpdate[],
+    type: 'AUTO' | 'MANUAL',
+    reason?: string
+  ): Promise<void> {
+    try {
+      const logEntry = {
+        order_id: orderId,
+        location_id: locationId,
+        updates: updatedIngredients,
+        type,
+        reason: reason || null,
+        created_at: new Date().toISOString()
+      };
+
+      const { error: logError } = await supabase
+        .from("inventory_logs")
+        .insert(logEntry);
+
+      if (logError) {
+        console.error(`❌ Failed to create inventory log:`, logError);
+      } else {
+        console.log(`✅ Created ${type} inventory log for location ${locationId}`);
+      }
+    } catch (error) {
+      console.error("❌ Error creating inventory log:", error);
     }
   }
 }
