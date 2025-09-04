@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Sidebar } from '@/components/layout/sidebar'
 import { Header } from '@/components/layout/header'
+import { ReduxProvider } from '@/components/providers/redux-provider'
 
 export default async function DashboardLayout({
   children,
@@ -26,14 +27,16 @@ export default async function DashboardLayout({
     .single()
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
-        <Header user={user} profile={profile} />
-        <main className="flex-1 overflow-auto p-6">
-          {children}
-        </main>
+    <ReduxProvider>
+      <div className="flex h-screen bg-background">
+        <Sidebar />
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <Header user={user} profile={profile} />
+          <main className="flex-1 overflow-auto p-6">
+            {children}
+          </main>
+        </div>
       </div>
-    </div>
+    </ReduxProvider>
   )
 }
