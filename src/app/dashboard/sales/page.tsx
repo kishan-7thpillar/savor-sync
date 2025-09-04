@@ -33,7 +33,9 @@ import {
   ShoppingCart, 
   Clock,
   Calendar,
-  Download
+  Download,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react'
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8']
@@ -51,17 +53,22 @@ export default function SalesPage() {
   const [hourlyChartData, setHourlyChartData] = useState<any[]>([])
   const [orderTypeChartData, setOrderTypeChartData] = useState<any[]>([])
   const [timeRange, setTimeRange] = useState('7d')
+  const [salesWeekDate, setSalesWeekDate] = useState(new Date())
   const [loading, setLoading] = useState(true)
   const supabase = createClient()
 
   useEffect(() => {
     fetchSalesData()
-  }, [timeRange])
+  }, [timeRange, salesWeekDate])
 
   const fetchSalesData = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/sales?timeRange=${timeRange}&limit=100`)
+      // For weekly view, calculate the week start date
+      const weekStart = new Date(salesWeekDate)
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay())
+      
+      const response = await fetch(`/api/sales?timeRange=${timeRange}&limit=100&weekStart=${weekStart.toISOString()}`)
       const result = await response.json()
       
       if (result.success) {
@@ -73,56 +80,26 @@ export default function SalesPage() {
         setOrderTypeChartData(result.data.orderTypeData)
       } else {
         console.error('API Error:', result.error)
-        // Fallback to mock data if API fails
-        const mockData = generateMockSalesData(timeRange)
-        setSalesData(mockData.dailyData)
-        setMetrics(mockData.metrics)
+        // Set empty data if API fails
+        setSalesData([])
+        setTopItems([])
+        setRecentOrders([])
+        setHourlyChartData([])
+        setOrderTypeChartData([])
       }
     } catch (error) {
       console.error('Error fetching sales data:', error)
-      // Fallback to mock data if API fails
-      const mockData = generateMockSalesData(timeRange)
-      setSalesData(mockData.dailyData)
-      setMetrics(mockData.metrics)
+      // Set empty data if API fails
+      setSalesData([])
+      setTopItems([])
+      setRecentOrders([])
+      setHourlyChartData([])
+      setOrderTypeChartData([])
     } finally {
       setLoading(false)
     }
   }
 
-  const generateMockSalesData = (range: string) => {
-    const days = range === '7d' ? 7 : range === '30d' ? 30 : 90
-    const dailyData = []
-    let totalSales = 0
-    let totalOrders = 0
-
-    for (let i = days - 1; i >= 0; i--) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      
-      const sales = Math.floor(Math.random() * 3000) + 1500
-      const orders = Math.floor(Math.random() * 80) + 40
-      
-      totalSales += sales
-      totalOrders += orders
-      
-      dailyData.push({
-        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        sales,
-        orders,
-        aov: sales / orders,
-      })
-    }
-
-    return {
-      dailyData,
-      metrics: {
-        totalSales,
-        totalOrders,
-        avgOrderValue: totalSales / totalOrders,
-        salesGrowth: Math.floor(Math.random() * 20) - 10,
-      }
-    }
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -213,10 +190,47 @@ export default function SalesPage() {
       {/* Sales Trend Chart */}
       <Card>
         <CardHeader>
-          <CardTitle>Sales Trend</CardTitle>
-          <CardDescription>
-            Daily sales and order volume over the selected period
-          </CardDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Sales Trend</CardTitle>
+              <CardDescription>
+                Daily sales and order volume over the selected period
+              </CardDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newDate = new Date(salesWeekDate)
+                  newDate.setDate(newDate.getDate() - 7)
+                  setSalesWeekDate(newDate)
+                }}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Previous Week
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSalesWeekDate(new Date())}
+              >
+                This Week
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const newDate = new Date(salesWeekDate)
+                  newDate.setDate(newDate.getDate() + 7)
+                  setSalesWeekDate(newDate)
+                }}
+              >
+                Next Week
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (

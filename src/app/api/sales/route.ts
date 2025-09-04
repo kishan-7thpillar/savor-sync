@@ -12,23 +12,32 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const limit = searchParams.get("limit") || "10";
     const timeRange = searchParams.get("timeRange") || "7d";
+    const weekStartParam = searchParams.get("weekStart");
 
-    // Calculate date range based on timeRange
-    const endDate = new Date();
-    const startDate = new Date();
+    // Calculate date range based on timeRange and weekStart
+    let endDate = new Date();
+    let startDate = new Date();
 
-    switch (timeRange) {
-      case "7d":
-        startDate.setDate(endDate.getDate() - 7);
-        break;
-      case "30d":
-        startDate.setDate(endDate.getDate() - 30);
-        break;
-      case "90d":
-        startDate.setDate(endDate.getDate() - 90);
-        break;
-      default:
-        startDate.setDate(endDate.getDate() - 7);
+    if (weekStartParam) {
+      // If weekStart is provided, use it for weekly navigation
+      startDate = new Date(weekStartParam);
+      endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + 6); // End of the week
+    } else {
+      // Default behavior based on timeRange
+      switch (timeRange) {
+        case "7d":
+          startDate.setDate(endDate.getDate() - 7);
+          break;
+        case "30d":
+          startDate.setDate(endDate.getDate() - 30);
+          break;
+        case "90d":
+          startDate.setDate(endDate.getDate() - 90);
+          break;
+        default:
+          startDate.setDate(endDate.getDate() - 7);
+      }
     }
 
     const requestBody = {
