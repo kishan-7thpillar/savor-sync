@@ -34,7 +34,12 @@ import { InventoryReports } from "@/components/dashboard/inventory-reports";
 import { InventoryLogsTable } from "@/components/dashboard/inventory-logs-table";
 import { ManualInventoryUpdateForm } from "@/components/forms/manual-inventory-update-form";
 import { Product, Ingredient } from "@/types/square";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function InventoryPage() {
   const [showAddItem, setShowAddItem] = useState(false);
@@ -47,13 +52,19 @@ export default function InventoryPage() {
   const [showBulkActions, setShowBulkActions] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [showManualUpdate, setShowManualUpdate] = useState(false);
-  const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
+  const [selectedIngredientId, setSelectedIngredientId] = useState<
+    string | null
+  >(null);
 
   const handleAddItemSuccess = () => {
     setShowAddItem(false);
     // Increment the refresh trigger to force a reload
     setRefreshTrigger((prev) => prev + 1);
-    console.log(`${activeTab === "products" ? "Product" : "Ingredient"} added successfully, refreshing list...`);
+    console.log(
+      `${
+        activeTab === "products" ? "Product" : "Ingredient"
+      } added successfully, refreshing list...`
+    );
   };
 
   const getAddButtonText = () => {
@@ -193,7 +204,7 @@ export default function InventoryPage() {
               <Filter className="mr-2 h-4 w-4" />
               Categories
             </TabsTrigger>
-            <TabsTrigger value="orders" className="flex items-center">
+            {/* <TabsTrigger value="orders" className="flex items-center">
               <History className="mr-2 h-4 w-4" />
               Orders
             </TabsTrigger>
@@ -204,7 +215,7 @@ export default function InventoryPage() {
             <TabsTrigger value="logs" className="flex items-center">
               <History className="mr-2 h-4 w-4" />
               Inventory Logs
-            </TabsTrigger>
+            </TabsTrigger> */}
           </TabsList>
         </div>
 
@@ -380,8 +391,10 @@ export default function InventoryPage() {
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4 mt-4">
-          <InventoryLogsTable 
-            locationId={selectedLocation !== 'all' ? selectedLocation : undefined}
+          <InventoryLogsTable
+            locationId={
+              selectedLocation !== "all" ? selectedLocation : undefined
+            }
           />
         </TabsContent>
       </Tabs>
@@ -394,7 +407,9 @@ export default function InventoryPage() {
           </DialogHeader>
           <ManualInventoryUpdateForm
             preselectedIngredientId={selectedIngredientId || undefined}
-            preselectedLocationId={selectedLocation !== 'all' ? selectedLocation : undefined}
+            preselectedLocationId={
+              selectedLocation !== "all" ? selectedLocation : undefined
+            }
             onSuccess={handleManualUpdateSuccess}
             onCancel={() => setShowManualUpdate(false)}
           />

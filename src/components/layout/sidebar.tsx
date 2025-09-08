@@ -23,16 +23,16 @@ import {
 } from "lucide-react";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: Home },
-  { name: "Locations", href: "/dashboard/locations", icon: MapPin },
+  // { name: "Dashboard", href: "/dashboard", icon: Home },
   { name: "Sales", href: "/dashboard/sales", icon: TrendingUp },
-  { name: "Operations", href: "/dashboard/operations", icon: Clock },
+  { name: "Locations", href: "/dashboard/locations", icon: MapPin },
+  // { name: "Operations", href: "/dashboard/operations", icon: Clock },
   { name: "Staff", href: "/dashboard/staff", icon: Users },
   { name: "Costs", href: "/dashboard/costs", icon: DollarSign },
+  { name: "Inventory", href: "/dashboard/inventory", icon: Package },
   { name: "Wastage", href: "/dashboard/wastage", icon: Trash2 },
   { name: "Customer", href: "/dashboard/customers", icon: Users },
-  { name: "Inventory", href: "/dashboard/inventory", icon: Package },
-  { name: "API Docs", href: "/api/docs", icon: FileText },
+  // { name: "API Docs", href: "/api/docs", icon: FileText },
 ];
 
 interface SidebarProps {

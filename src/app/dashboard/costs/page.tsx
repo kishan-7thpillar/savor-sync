@@ -66,6 +66,7 @@ import {
   calculateDailyRentalCost,
   type ProfitData,
 } from "@/data/mockProfitData";
+import { SmartInsights } from "@/components/dashboard/smart-insights";
 
 const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884D8"];
 
@@ -507,6 +508,7 @@ export default function CostsPage() {
           <TabsTrigger value="profit-analysis">Profit Analysis</TabsTrigger>
           <TabsTrigger value="cost-breakdown">Cost Breakdown</TabsTrigger>
           <TabsTrigger value="trends">Trends</TabsTrigger>
+          <TabsTrigger value="smart-insights">Smart Insights</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profit-analysis" className="space-y-6">
@@ -785,6 +787,15 @@ export default function CostsPage() {
               </ResponsiveContainer>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="smart-insights" className="space-y-6">
+          <SmartInsights
+            profitData={profitData}
+            currentMetrics={currentMetrics}
+            selectedLocation={selectedLocation}
+            timeFilter={timeFilter}
+          />
         </TabsContent>
       </Tabs>
     </div>
