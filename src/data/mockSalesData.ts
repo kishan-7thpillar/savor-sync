@@ -93,6 +93,103 @@ export interface Location {
   };
 }
 
+// Staff & Labor Management Interfaces
+export type StaffRole =
+  | "Manager"
+  | "FOH"
+  | "BOH"
+  | "Kitchen"
+  | "Cleaning"
+  | "Corporate";
+
+export interface StaffMember {
+  id: string;
+  employeeId: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: StaffRole;
+  locationId: string;
+  locationName: string;
+  hourlyRate: number;
+  isActive: boolean;
+  hireDate: string;
+  emergencyContact: {
+    name: string;
+    phone: string;
+    relationship: string;
+  };
+  permissions: {
+    canApproveInventory: boolean;
+    canManageSchedule: boolean;
+    canAccessReports: boolean;
+    canManageStaff: boolean;
+    canProcessRefunds: boolean;
+  };
+  avatar?: string;
+}
+
+export interface Shift {
+  id: string;
+  staffId: string;
+  locationId: string;
+  date: string; // YYYY-MM-DD format
+  startTime: string; // HH:MM format
+  endTime: string; // HH:MM format
+  role: StaffRole;
+  status: "scheduled" | "in_progress" | "completed" | "no_show" | "cancelled";
+  notes?: string;
+  createdBy: string; // staffId of who created the shift
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TimeLog {
+  id: string;
+  staffId: string;
+  shiftId: string;
+  locationId: string;
+  clockIn: string; // ISO timestamp
+  clockOut?: string; // ISO timestamp
+  breakStart?: string; // ISO timestamp
+  breakEnd?: string; // ISO timestamp
+  totalHours?: number;
+  regularHours?: number;
+  overtimeHours?: number;
+  status: "clocked_in" | "on_break" | "clocked_out";
+  notes?: string;
+}
+
+export interface LaborCost {
+  id: string;
+  locationId: string;
+  staffId: string;
+  date: string; // YYYY-MM-DD format
+  regularHours: number;
+  overtimeHours: number;
+  regularPay: number;
+  overtimePay: number;
+  totalPay: number;
+  tips?: number; // For FOH roles
+  totalCompensation: number;
+}
+
+export interface StaffPerformance {
+  staffId: string;
+  locationId: string;
+  period: string; // YYYY-MM format
+  hoursWorked: number;
+  shiftsCompleted: number;
+  shiftsScheduled: number;
+  attendanceRate: number; // percentage
+  averageHourlyRate: number;
+  totalTips: number;
+  totalEarnings: number;
+  taskCompletionRate: number; // percentage
+  qualityScore: number; // 1-10 scale
+  customerRating?: number; // 1-5 scale for FOH
+}
+
 // Mock Menu Items
 export const mockMenuItems: MenuItem[] = [
   {
@@ -340,6 +437,659 @@ export const mockLocations: Location[] = [
     },
   },
 ];
+
+// Mock Staff Members (10+ staff across different roles and locations)
+export const mockStaffMembers: StaffMember[] = [
+  {
+    id: "staff_001",
+    employeeId: "EMP001",
+    name: "Sarah Johnson",
+    email: "sarah.johnson@savorsync.com",
+    phone: "(415) 555-0124",
+    role: "Manager",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    hourlyRate: 28.5,
+    isActive: true,
+    hireDate: "2023-01-15",
+    emergencyContact: {
+      name: "David Johnson",
+      phone: "(415) 555-0125",
+      relationship: "Spouse",
+    },
+    permissions: {
+      canApproveInventory: true,
+      canManageSchedule: true,
+      canAccessReports: true,
+      canManageStaff: true,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_002",
+    employeeId: "EMP002",
+    name: "Michael Chen",
+    email: "michael.chen@savorsync.com",
+    phone: "(415) 555-0457",
+    role: "Manager",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    hourlyRate: 27.0,
+    isActive: true,
+    hireDate: "2023-02-20",
+    emergencyContact: {
+      name: "Lisa Chen",
+      phone: "(415) 555-0458",
+      relationship: "Wife",
+    },
+    permissions: {
+      canApproveInventory: true,
+      canManageSchedule: true,
+      canAccessReports: true,
+      canManageStaff: true,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_003",
+    employeeId: "EMP003",
+    name: "Emily Rodriguez",
+    email: "emily.rodriguez@savorsync.com",
+    phone: "(415) 555-0790",
+    role: "Manager",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    hourlyRate: 26.5,
+    isActive: true,
+    hireDate: "2023-03-10",
+    emergencyContact: {
+      name: "Carlos Rodriguez",
+      phone: "(415) 555-0791",
+      relationship: "Brother",
+    },
+    permissions: {
+      canApproveInventory: true,
+      canManageSchedule: true,
+      canAccessReports: true,
+      canManageStaff: true,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_004",
+    employeeId: "EMP004",
+    name: "Alex Thompson",
+    email: "alex.thompson@savorsync.com",
+    phone: "(415) 555-0201",
+    role: "FOH",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    hourlyRate: 18.5,
+    isActive: true,
+    hireDate: "2023-04-05",
+    emergencyContact: {
+      name: "Maria Thompson",
+      phone: "(415) 555-0202",
+      relationship: "Mother",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_005",
+    employeeId: "EMP005",
+    name: "Jessica Park",
+    email: "jessica.park@savorsync.com",
+    phone: "(415) 555-0301",
+    role: "FOH",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    hourlyRate: 19.0,
+    isActive: true,
+    hireDate: "2023-05-12",
+    emergencyContact: {
+      name: "James Park",
+      phone: "(415) 555-0302",
+      relationship: "Father",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_006",
+    employeeId: "EMP006",
+    name: "Marcus Williams",
+    email: "marcus.williams@savorsync.com",
+    phone: "(415) 555-0401",
+    role: "Kitchen",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    hourlyRate: 22.0,
+    isActive: true,
+    hireDate: "2023-03-20",
+    emergencyContact: {
+      name: "Angela Williams",
+      phone: "(415) 555-0402",
+      relationship: "Sister",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: false,
+    },
+  },
+  {
+    id: "staff_007",
+    employeeId: "EMP007",
+    name: "Sofia Martinez",
+    email: "sofia.martinez@savorsync.com",
+    phone: "(415) 555-0501",
+    role: "Kitchen",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    hourlyRate: 21.5,
+    isActive: true,
+    hireDate: "2023-06-01",
+    emergencyContact: {
+      name: "Roberto Martinez",
+      phone: "(415) 555-0502",
+      relationship: "Husband",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: false,
+    },
+  },
+  {
+    id: "staff_008",
+    employeeId: "EMP008",
+    name: "David Kim",
+    email: "david.kim@savorsync.com",
+    phone: "(415) 555-0601",
+    role: "BOH",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    hourlyRate: 20.0,
+    isActive: true,
+    hireDate: "2023-07-15",
+    emergencyContact: {
+      name: "Grace Kim",
+      phone: "(415) 555-0602",
+      relationship: "Wife",
+    },
+    permissions: {
+      canApproveInventory: true,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: false,
+    },
+  },
+  {
+    id: "staff_009",
+    employeeId: "EMP009",
+    name: "Rachel Green",
+    email: "rachel.green@savorsync.com",
+    phone: "(415) 555-0701",
+    role: "FOH",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    hourlyRate: 18.0,
+    isActive: true,
+    hireDate: "2023-08-10",
+    emergencyContact: {
+      name: "Monica Green",
+      phone: "(415) 555-0702",
+      relationship: "Sister",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_010",
+    employeeId: "EMP010",
+    name: "James Wilson",
+    email: "james.wilson@savorsync.com",
+    phone: "(415) 555-0801",
+    role: "Cleaning",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    hourlyRate: 16.5,
+    isActive: true,
+    hireDate: "2023-09-05",
+    emergencyContact: {
+      name: "Mary Wilson",
+      phone: "(415) 555-0802",
+      relationship: "Mother",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: false,
+    },
+  },
+  {
+    id: "staff_011",
+    employeeId: "EMP011",
+    name: "Lisa Anderson",
+    email: "lisa.anderson@savorsync.com",
+    phone: "(415) 555-0901",
+    role: "Corporate",
+    locationId: "loc_001", // Corporate staff assigned to main location
+    locationName: "SavorSync Downtown",
+    hourlyRate: 35.0,
+    isActive: true,
+    hireDate: "2022-11-01",
+    emergencyContact: {
+      name: "Tom Anderson",
+      phone: "(415) 555-0902",
+      relationship: "Husband",
+    },
+    permissions: {
+      canApproveInventory: true,
+      canManageSchedule: true,
+      canAccessReports: true,
+      canManageStaff: true,
+      canProcessRefunds: true,
+    },
+  },
+  {
+    id: "staff_012",
+    employeeId: "EMP012",
+    name: "Carlos Mendez",
+    email: "carlos.mendez@savorsync.com",
+    phone: "(415) 555-1001",
+    role: "Kitchen",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    hourlyRate: 23.0,
+    isActive: true,
+    hireDate: "2023-04-20",
+    emergencyContact: {
+      name: "Elena Mendez",
+      phone: "(415) 555-1002",
+      relationship: "Wife",
+    },
+    permissions: {
+      canApproveInventory: false,
+      canManageSchedule: false,
+      canAccessReports: false,
+      canManageStaff: false,
+      canProcessRefunds: false,
+    },
+  },
+];
+
+// Generate mock shifts for the last 30 days
+function generateMockShifts(): Shift[] {
+  const shifts: Shift[] = [];
+  const today = new Date();
+
+  for (let dayOffset = 0; dayOffset < 30; dayOffset++) {
+    const currentDate = new Date(today);
+    currentDate.setDate(today.getDate() - dayOffset);
+    const dateString = currentDate.toISOString().split("T")[0];
+
+    // Generate shifts for each location
+    mockLocations.forEach((location) => {
+      const locationStaff = mockStaffMembers.filter(
+        (staff) => staff.locationId === location.id
+      );
+
+      // Morning shift (8:00-16:00)
+      const morningStaff = locationStaff.slice(
+        0,
+        Math.ceil(locationStaff.length / 2)
+      );
+      morningStaff.forEach((staff, index) => {
+        if (Math.random() > 0.1) {
+          // 90% chance of being scheduled
+          shifts.push({
+            id: `shift_${dateString}_${location.id}_${staff.id}_morning`,
+            staffId: staff.id,
+            locationId: location.id,
+            date: dateString,
+            startTime: "08:00",
+            endTime: "16:00",
+            role: staff.role,
+            status:
+              dayOffset === 0
+                ? "in_progress"
+                : Math.random() > 0.05
+                ? "completed"
+                : "no_show",
+            createdBy: "staff_001", // Manager created
+            createdAt: new Date(
+              currentDate.getTime() - 24 * 60 * 60 * 1000
+            ).toISOString(),
+            updatedAt: new Date(
+              currentDate.getTime() - 24 * 60 * 60 * 1000
+            ).toISOString(),
+          });
+        }
+      });
+
+      // Evening shift (16:00-24:00)
+      const eveningStaff = locationStaff.slice(
+        Math.ceil(locationStaff.length / 2)
+      );
+      eveningStaff.forEach((staff, index) => {
+        if (Math.random() > 0.1) {
+          // 90% chance of being scheduled
+          shifts.push({
+            id: `shift_${dateString}_${location.id}_${staff.id}_evening`,
+            staffId: staff.id,
+            locationId: location.id,
+            date: dateString,
+            startTime: "16:00",
+            endTime: "24:00",
+            role: staff.role,
+            status:
+              dayOffset === 0
+                ? "scheduled"
+                : Math.random() > 0.05
+                ? "completed"
+                : "no_show",
+            createdBy: "staff_001", // Manager created
+            createdAt: new Date(
+              currentDate.getTime() - 24 * 60 * 60 * 1000
+            ).toISOString(),
+            updatedAt: new Date(
+              currentDate.getTime() - 24 * 60 * 60 * 1000
+            ).toISOString(),
+          });
+        }
+      });
+    });
+  }
+
+  return shifts;
+}
+
+// Generate mock time logs based on shifts
+function generateMockTimeLogs(shifts: Shift[]): TimeLog[] {
+  const timeLogs: TimeLog[] = [];
+
+  shifts.forEach((shift) => {
+    if (shift.status === "completed" || shift.status === "in_progress") {
+      const shiftDate = new Date(shift.date);
+      const [startHour, startMinute] = shift.startTime.split(":").map(Number);
+      const [endHour, endMinute] = shift.endTime.split(":").map(Number);
+
+      const clockInTime = new Date(shiftDate);
+      clockInTime.setHours(startHour, startMinute, 0, 0);
+      // Add some randomness to clock-in time (-5 to +15 minutes)
+      clockInTime.setMinutes(
+        clockInTime.getMinutes() + Math.floor(Math.random() * 20) - 5
+      );
+
+      let clockOutTime: Date | undefined;
+      if (shift.status === "completed") {
+        clockOutTime = new Date(shiftDate);
+        clockOutTime.setHours(endHour, endMinute, 0, 0);
+        // Add some randomness to clock-out time (-10 to +30 minutes)
+        clockOutTime.setMinutes(
+          clockOutTime.getMinutes() + Math.floor(Math.random() * 40) - 10
+        );
+      }
+
+      const totalHours = clockOutTime
+        ? (clockOutTime.getTime() - clockInTime.getTime()) / (1000 * 60 * 60)
+        : undefined;
+
+      const regularHours = totalHours && totalHours <= 8 ? totalHours : 8;
+      const overtimeHours = totalHours && totalHours > 8 ? totalHours - 8 : 0;
+
+      timeLogs.push({
+        id: `timelog_${shift.id}`,
+        staffId: shift.staffId,
+        shiftId: shift.id,
+        locationId: shift.locationId,
+        clockIn: clockInTime.toISOString(),
+        clockOut: clockOutTime?.toISOString(),
+        totalHours: totalHours ? Math.round(totalHours * 100) / 100 : undefined,
+        regularHours: Math.round(regularHours * 100) / 100,
+        overtimeHours: Math.round(overtimeHours * 100) / 100,
+        status: shift.status === "in_progress" ? "clocked_in" : "clocked_out",
+      });
+    }
+  });
+
+  return timeLogs;
+}
+
+// Generate mock labor costs based on time logs
+function generateMockLaborCosts(timeLogs: TimeLog[]): LaborCost[] {
+  const laborCosts: LaborCost[] = [];
+
+  timeLogs.forEach((timeLog) => {
+    if (timeLog.totalHours && timeLog.clockOut) {
+      const staff = mockStaffMembers.find((s) => s.id === timeLog.staffId);
+      if (staff) {
+        const regularPay = timeLog.regularHours! * staff.hourlyRate;
+        const overtimePay = timeLog.overtimeHours! * staff.hourlyRate * 1.5;
+        const totalPay = regularPay + overtimePay;
+
+        // Generate tips for FOH roles
+        const tips =
+          staff.role === "FOH" ? Math.floor(Math.random() * 150) + 20 : 0;
+
+        laborCosts.push({
+          id: `laborcost_${timeLog.id}`,
+          locationId: timeLog.locationId,
+          staffId: timeLog.staffId,
+          date: timeLog.clockIn.split("T")[0],
+          regularHours: timeLog.regularHours!,
+          overtimeHours: timeLog.overtimeHours!,
+          regularPay: Math.round(regularPay * 100) / 100,
+          overtimePay: Math.round(overtimePay * 100) / 100,
+          totalPay: Math.round(totalPay * 100) / 100,
+          tips: tips,
+          totalCompensation: Math.round((totalPay + tips) * 100) / 100,
+        });
+      }
+    }
+  });
+
+  return laborCosts;
+}
+
+// Generate mock staff performance data
+function generateMockStaffPerformance(
+  shifts: Shift[],
+  timeLogs: TimeLog[],
+  laborCosts: LaborCost[]
+): StaffPerformance[] {
+  const performance: StaffPerformance[] = [];
+  const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
+
+  mockStaffMembers.forEach((staff) => {
+    const staffShifts = shifts.filter((s) => s.staffId === staff.id);
+    const staffTimeLogs = timeLogs.filter((t) => t.staffId === staff.id);
+    const staffLaborCosts = laborCosts.filter((l) => l.staffId === staff.id);
+
+    const scheduledShifts = staffShifts.length;
+    const completedShifts = staffShifts.filter(
+      (s) => s.status === "completed"
+    ).length;
+    const hoursWorked = staffTimeLogs.reduce(
+      (sum, log) => sum + (log.totalHours || 0),
+      0
+    );
+    const totalTips = staffLaborCosts.reduce(
+      (sum, cost) => sum + (cost.tips || 0),
+      0
+    );
+    const totalEarnings = staffLaborCosts.reduce(
+      (sum, cost) => sum + cost.totalCompensation,
+      0
+    );
+
+    performance.push({
+      staffId: staff.id,
+      locationId: staff.locationId,
+      period: currentMonth,
+      hoursWorked: Math.round(hoursWorked * 100) / 100,
+      shiftsCompleted: completedShifts,
+      shiftsScheduled: scheduledShifts,
+      attendanceRate:
+        scheduledShifts > 0
+          ? Math.round((completedShifts / scheduledShifts) * 100)
+          : 100,
+      averageHourlyRate: staff.hourlyRate,
+      totalTips: totalTips,
+      totalEarnings: Math.round(totalEarnings * 100) / 100,
+      taskCompletionRate: Math.floor(Math.random() * 20) + 80, // 80-100%
+      qualityScore: Math.floor(Math.random() * 3) + 8, // 8-10 scale
+      customerRating:
+        staff.role === "FOH"
+          ? Math.floor(Math.random() * 10) / 2 + 4
+          : undefined, // 4.0-4.9 for FOH
+    });
+  });
+
+  return performance;
+}
+
+// Generate all mock data
+export const mockShifts = generateMockShifts();
+export const mockTimeLogs = generateMockTimeLogs(mockShifts);
+export const mockLaborCosts = generateMockLaborCosts(mockTimeLogs);
+export const mockStaffPerformance = generateMockStaffPerformance(
+  mockShifts,
+  mockTimeLogs,
+  mockLaborCosts
+);
+
+// Helper functions for staff and labor analytics
+export const getStaffByLocation = (locationId: string): StaffMember[] => {
+  if (locationId === "all") return mockStaffMembers;
+  return mockStaffMembers.filter((staff) => staff.locationId === locationId);
+};
+
+export const getStaffByRole = (role: StaffRole): StaffMember[] => {
+  return mockStaffMembers.filter((staff) => staff.role === role);
+};
+
+export const getShiftsByDateRange = (
+  startDate: Date,
+  endDate: Date,
+  locationId?: string
+): Shift[] => {
+  return mockShifts.filter((shift) => {
+    const shiftDate = new Date(shift.date);
+    const matchesDate = shiftDate >= startDate && shiftDate <= endDate;
+    const matchesLocation =
+      !locationId || locationId === "all" || shift.locationId === locationId;
+    return matchesDate && matchesLocation;
+  });
+};
+
+export const getLaborCostsByDateRange = (
+  startDate: Date,
+  endDate: Date,
+  locationId?: string
+): LaborCost[] => {
+  return mockLaborCosts.filter((cost) => {
+    const costDate = new Date(cost.date);
+    const matchesDate = costDate >= startDate && costDate <= endDate;
+    const matchesLocation =
+      !locationId || locationId === "all" || cost.locationId === locationId;
+    return matchesDate && matchesLocation;
+  });
+};
+
+export const getTopPerformers = (
+  locationId?: string,
+  limit: number = 5
+): (StaffMember & { performance: StaffPerformance })[] => {
+  const staffToConsider =
+    locationId && locationId !== "all"
+      ? mockStaffMembers.filter((staff) => staff.locationId === locationId)
+      : mockStaffMembers;
+
+  return staffToConsider
+    .map((staff) => ({
+      ...staff,
+      performance: mockStaffPerformance.find((p) => p.staffId === staff.id)!,
+    }))
+    .filter((item) => item.performance)
+    .sort((a, b) => b.performance.hoursWorked - a.performance.hoursWorked)
+    .slice(0, limit);
+};
+
+export const calculateLaborMetrics = (locationId?: string) => {
+  const laborCosts =
+    locationId && locationId !== "all"
+      ? mockLaborCosts.filter((cost) => cost.locationId === locationId)
+      : mockLaborCosts;
+
+  const totalLaborCost = laborCosts.reduce(
+    (sum, cost) => sum + cost.totalCompensation,
+    0
+  );
+  const totalRegularHours = laborCosts.reduce(
+    (sum, cost) => sum + cost.regularHours,
+    0
+  );
+  const totalOvertimeHours = laborCosts.reduce(
+    (sum, cost) => sum + cost.overtimeHours,
+    0
+  );
+  const totalTips = laborCosts.reduce((sum, cost) => sum + (cost.tips || 0), 0);
+
+  // Get sales data for comparison
+  const salesOrders =
+    locationId && locationId !== "all"
+      ? mockSalesOrders.filter((order) => order.locationId === locationId)
+      : mockSalesOrders;
+
+  const totalRevenue = salesOrders.reduce(
+    (sum, order) => sum + order.totalAmount,
+    0
+  );
+  const laborCostPercentage =
+    totalRevenue > 0 ? (totalLaborCost / totalRevenue) * 100 : 0;
+
+  return {
+    totalLaborCost: Math.round(totalLaborCost * 100) / 100,
+    totalRegularHours: Math.round(totalRegularHours * 100) / 100,
+    totalOvertimeHours: Math.round(totalOvertimeHours * 100) / 100,
+    totalTips: Math.round(totalTips * 100) / 100,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    laborCostPercentage: Math.round(laborCostPercentage * 100) / 100,
+    averageHourlyRate:
+      totalRegularHours > 0
+        ? Math.round(
+            ((totalLaborCost - totalTips) /
+              (totalRegularHours + totalOvertimeHours * 1.5)) *
+              100
+          ) / 100
+        : 0,
+  };
+};
 
 // Helper function to generate random orders
 function generateRandomOrder(

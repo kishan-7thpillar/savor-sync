@@ -12,8 +12,9 @@ export interface LocationState {
 const initialState: LocationState = {
   selectedLocation: 'all',
   locations: [
-    { id: 'downtown', name: 'Downtown', isActive: true },
-    { id: 'uptown', name: 'Uptown', isActive: true }
+    { id: 'loc_001', name: 'SavorSync Downtown', isActive: true },
+    { id: 'loc_002', name: 'SavorSync Marina', isActive: true },
+    { id: 'loc_003', name: 'SavorSync Mission', isActive: true }
   ]
 }
 
