@@ -63,6 +63,34 @@ export interface Location {
   phone: string;
   timezone: string;
   isActive: boolean;
+  // Multi-location management features
+  syncStatus: "online" | "offline" | "syncing" | "error";
+  lastSyncTime: string;
+  posSystem: {
+    provider: "Square" | "Toast" | "Clover" | "Shopify POS";
+    applicationId?: string;
+    locationId?: string;
+    isConfigured: boolean;
+    lastConnected?: string;
+  };
+  manager: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  operatingHours: {
+    [key: string]: {
+      open: string;
+      close: string;
+      isClosed: boolean;
+    };
+  };
+  features: {
+    deliveryEnabled: boolean;
+    takeoutEnabled: boolean;
+    dineInEnabled: boolean;
+    cateringEnabled: boolean;
+  };
 }
 
 // Mock Menu Items
@@ -201,6 +229,35 @@ export const mockLocations: Location[] = [
     phone: "(415) 555-0123",
     timezone: "America/Los_Angeles",
     isActive: true,
+    syncStatus: "online",
+    lastSyncTime: new Date(Date.now() - 2 * 60 * 1000).toISOString(), // 2 minutes ago
+    posSystem: {
+      provider: "Square",
+      applicationId: "sq0idp-wGVapF8sNt9PLrdj5znuKA",
+      locationId: "L7HXD9RRQ2K7B",
+      isConfigured: true,
+      lastConnected: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    },
+    manager: {
+      name: "Sarah Johnson",
+      email: "sarah.johnson@savorsync.com",
+      phone: "(415) 555-0124",
+    },
+    operatingHours: {
+      monday: { open: "08:00", close: "22:00", isClosed: false },
+      tuesday: { open: "08:00", close: "22:00", isClosed: false },
+      wednesday: { open: "08:00", close: "22:00", isClosed: false },
+      thursday: { open: "08:00", close: "22:00", isClosed: false },
+      friday: { open: "08:00", close: "23:00", isClosed: false },
+      saturday: { open: "09:00", close: "23:00", isClosed: false },
+      sunday: { open: "09:00", close: "21:00", isClosed: false },
+    },
+    features: {
+      deliveryEnabled: true,
+      takeoutEnabled: true,
+      dineInEnabled: true,
+      cateringEnabled: true,
+    },
   },
   {
     id: "loc_002",
@@ -212,6 +269,35 @@ export const mockLocations: Location[] = [
     phone: "(415) 555-0456",
     timezone: "America/Los_Angeles",
     isActive: true,
+    syncStatus: "syncing",
+    lastSyncTime: new Date(Date.now() - 15 * 60 * 1000).toISOString(), // 15 minutes ago
+    posSystem: {
+      provider: "Toast",
+      applicationId: "toast_app_123",
+      locationId: "toast_loc_456",
+      isConfigured: true,
+      lastConnected: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
+    },
+    manager: {
+      name: "Michael Chen",
+      email: "michael.chen@savorsync.com",
+      phone: "(415) 555-0457",
+    },
+    operatingHours: {
+      monday: { open: "07:00", close: "21:00", isClosed: false },
+      tuesday: { open: "07:00", close: "21:00", isClosed: false },
+      wednesday: { open: "07:00", close: "21:00", isClosed: false },
+      thursday: { open: "07:00", close: "21:00", isClosed: false },
+      friday: { open: "07:00", close: "22:00", isClosed: false },
+      saturday: { open: "08:00", close: "22:00", isClosed: false },
+      sunday: { open: "08:00", close: "20:00", isClosed: false },
+    },
+    features: {
+      deliveryEnabled: true,
+      takeoutEnabled: true,
+      dineInEnabled: true,
+      cateringEnabled: false,
+    },
   },
   {
     id: "loc_003",
@@ -223,6 +309,35 @@ export const mockLocations: Location[] = [
     phone: "(415) 555-0789",
     timezone: "America/Los_Angeles",
     isActive: true,
+    syncStatus: "offline",
+    lastSyncTime: new Date(Date.now() - 45 * 60 * 1000).toISOString(), // 45 minutes ago
+    posSystem: {
+      provider: "Clover",
+      applicationId: "clover_app_789",
+      locationId: "clover_loc_012",
+      isConfigured: false,
+      lastConnected: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), // 2 hours ago
+    },
+    manager: {
+      name: "Emily Rodriguez",
+      email: "emily.rodriguez@savorsync.com",
+      phone: "(415) 555-0790",
+    },
+    operatingHours: {
+      monday: { open: "09:00", close: "20:00", isClosed: false },
+      tuesday: { open: "09:00", close: "20:00", isClosed: false },
+      wednesday: { open: "09:00", close: "20:00", isClosed: false },
+      thursday: { open: "09:00", close: "20:00", isClosed: false },
+      friday: { open: "09:00", close: "21:00", isClosed: false },
+      saturday: { open: "10:00", close: "21:00", isClosed: false },
+      sunday: { open: "00:00", close: "00:00", isClosed: true },
+    },
+    features: {
+      deliveryEnabled: false,
+      takeoutEnabled: true,
+      dineInEnabled: true,
+      cateringEnabled: true,
+    },
   },
 ];
 
