@@ -344,6 +344,161 @@ export interface DailyActionPlan {
   recommendations: string[];
 }
 
+// Inventory Management Interfaces
+export type IngredientCategory =
+  | "produce"
+  | "meat"
+  | "dairy"
+  | "dry_goods"
+  | "beverages"
+  | "condiments"
+  | "spices";
+export type StockStatus = "in_stock" | "low_stock" | "out_of_stock";
+export type StockChangeReason =
+  | "sale"
+  | "spoilage"
+  | "theft"
+  | "over_prep"
+  | "supplier_error"
+  | "manual_adjustment"
+  | "delivery"
+  | "return";
+export type UnitOfMeasure =
+  | "kg"
+  | "g"
+  | "l"
+  | "ml"
+  | "pieces"
+  | "cups"
+  | "tbsp"
+  | "tsp";
+
+export interface Supplier {
+  id: string;
+  name: string;
+  contactPerson: string;
+  email: string;
+  phone: string;
+  address: string;
+  leadTimeDays: number;
+  paymentTerms: string;
+  isActive: boolean;
+  categories: IngredientCategory[];
+  rating: number; // 1-5 scale
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Ingredient {
+  id: string;
+  name: string;
+  category: IngredientCategory;
+  unitOfMeasure: UnitOfMeasure;
+  unitCost: number; // cost per unit
+  supplierId: string;
+  supplierName: string;
+  reorderLevel: number; // minimum stock level
+  maxStockLevel: number;
+  shelfLifeDays: number;
+  storageRequirements: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface RecipeIngredient {
+  ingredientId: string;
+  ingredientName: string;
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  cost: number; // calculated cost for this quantity
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  recipe: RecipeIngredient[];
+  sellingPrice: number;
+  totalIngredientCost: number;
+  grossMargin: number; // percentage
+  foodCostPercentage: number;
+  preparationTime: number; // in minutes
+  posProductId?: string; // POS system product ID
+  isActive: boolean;
+  availableAtLocations: string[]; // location IDs
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StockLevel {
+  id: string;
+  ingredientId: string;
+  ingredientName: string;
+  locationId: string;
+  locationName: string;
+  currentStock: number;
+  unitOfMeasure: UnitOfMeasure;
+  stockStatus: StockStatus;
+  lastUpdated: string;
+  lastStockTake: string;
+  expirationDate?: string;
+  batchNumber?: string;
+}
+
+export interface StockMovement {
+  id: string;
+  ingredientId: string;
+  ingredientName: string;
+  locationId: string;
+  locationName: string;
+  movementType: "in" | "out";
+  quantity: number;
+  unitOfMeasure: UnitOfMeasure;
+  reason: StockChangeReason;
+  orderId?: string; // if related to a sale
+  staffId: string;
+  staffName: string;
+  notes?: string;
+  timestamp: string;
+  previousStock: number;
+  newStock: number;
+}
+
+export interface WastageReport {
+  id: string;
+  locationId: string;
+  locationName: string;
+  ingredientId: string;
+  ingredientName: string;
+  period: string; // YYYY-MM format
+  expectedUsage: number; // based on sales and recipes
+  actualUsage: number; // based on stock movements
+  variance: number; // difference between expected and actual
+  variancePercentage: number;
+  estimatedWastageCost: number;
+  primaryReasons: StockChangeReason[];
+  generatedAt: string;
+}
+
+export interface InventoryAlert {
+  id: string;
+  type: "low_stock" | "out_of_stock" | "expiring_soon" | "overstock";
+  ingredientId: string;
+  ingredientName: string;
+  locationId: string;
+  locationName: string;
+  currentStock: number;
+  threshold: number;
+  message: string;
+  severity: "low" | "medium" | "high" | "critical";
+  isResolved: boolean;
+  createdAt: string;
+  resolvedAt?: string;
+  resolvedBy?: string;
+}
+
 // Mock Menu Items
 export const mockMenuItems: MenuItem[] = [
   {
@@ -1430,6 +1585,954 @@ export const getMockDataByLocation = (locationId: string): Order[] => {
 
 export const getMockDataByChannel = (channel: Order["channel"]): Order[] => {
   return mockSalesOrders.filter((order) => order.channel === channel);
+};
+
+// Inventory Management Mock Data
+
+// Mock Suppliers
+export const mockSuppliers: Supplier[] = [
+  {
+    id: "supplier_001",
+    name: "Fresh Farm Produce Co.",
+    contactPerson: "John Martinez",
+    email: "john@freshfarm.com",
+    phone: "(555) 123-4567",
+    address: "123 Farm Road, Fresno, CA 93701",
+    leadTimeDays: 2,
+    paymentTerms: "Net 30",
+    isActive: true,
+    categories: ["produce"],
+    rating: 4.8,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-15T10:30:00Z",
+  },
+  {
+    id: "supplier_002",
+    name: "Premium Meats & Poultry",
+    contactPerson: "Sarah Wilson",
+    email: "sarah@premiummeats.com",
+    phone: "(555) 234-5678",
+    address: "456 Butcher Lane, Sacramento, CA 95814",
+    leadTimeDays: 1,
+    paymentTerms: "Net 15",
+    isActive: true,
+    categories: ["meat"],
+    rating: 4.9,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-20T14:45:00Z",
+  },
+  {
+    id: "supplier_003",
+    name: "Golden State Dairy",
+    contactPerson: "Mike Thompson",
+    email: "mike@goldenstatedairy.com",
+    phone: "(555) 345-6789",
+    address: "789 Dairy Drive, Modesto, CA 95350",
+    leadTimeDays: 1,
+    paymentTerms: "Net 21",
+    isActive: true,
+    categories: ["dairy"],
+    rating: 4.6,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-18T09:15:00Z",
+  },
+  {
+    id: "supplier_004",
+    name: "Bay Area Beverages",
+    contactPerson: "Lisa Chen",
+    email: "lisa@bayareabev.com",
+    phone: "(555) 456-7890",
+    address: "321 Beverage Blvd, Oakland, CA 94607",
+    leadTimeDays: 3,
+    paymentTerms: "Net 30",
+    isActive: true,
+    categories: ["beverages"],
+    rating: 4.4,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-25T16:20:00Z",
+  },
+  {
+    id: "supplier_005",
+    name: "Pacific Dry Goods",
+    contactPerson: "Robert Kim",
+    email: "robert@pacificdry.com",
+    phone: "(555) 567-8901",
+    address: "654 Storage Street, San Jose, CA 95110",
+    leadTimeDays: 5,
+    paymentTerms: "Net 45",
+    isActive: true,
+    categories: ["dry_goods", "condiments", "spices"],
+    rating: 4.7,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-22T11:30:00Z",
+  },
+];
+
+// Mock Ingredients
+export const mockIngredients: Ingredient[] = [
+  {
+    id: "ingredient_001",
+    name: "Ground Beef (80/20)",
+    category: "meat",
+    unitOfMeasure: "kg",
+    unitCost: 8.5,
+    supplierId: "supplier_002",
+    supplierName: "Premium Meats & Poultry",
+    reorderLevel: 10,
+    maxStockLevel: 50,
+    shelfLifeDays: 3,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-15T10:30:00Z",
+  },
+  {
+    id: "ingredient_002",
+    name: "Hamburger Buns",
+    category: "dry_goods",
+    unitOfMeasure: "pieces",
+    unitCost: 0.45,
+    supplierId: "supplier_005",
+    supplierName: "Pacific Dry Goods",
+    reorderLevel: 50,
+    maxStockLevel: 200,
+    shelfLifeDays: 5,
+    storageRequirements: "Room temperature, dry place",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-12T14:20:00Z",
+  },
+  {
+    id: "ingredient_003",
+    name: "Cheddar Cheese Slices",
+    category: "dairy",
+    unitOfMeasure: "pieces",
+    unitCost: 0.35,
+    supplierId: "supplier_003",
+    supplierName: "Golden State Dairy",
+    reorderLevel: 100,
+    maxStockLevel: 500,
+    shelfLifeDays: 14,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-18T09:45:00Z",
+  },
+  {
+    id: "ingredient_004",
+    name: "Lettuce (Iceberg)",
+    category: "produce",
+    unitOfMeasure: "kg",
+    unitCost: 2.8,
+    supplierId: "supplier_001",
+    supplierName: "Fresh Farm Produce Co.",
+    reorderLevel: 5,
+    maxStockLevel: 25,
+    shelfLifeDays: 7,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-20T16:15:00Z",
+  },
+  {
+    id: "ingredient_005",
+    name: "Tomatoes (Fresh)",
+    category: "produce",
+    unitOfMeasure: "kg",
+    unitCost: 3.2,
+    supplierId: "supplier_001",
+    supplierName: "Fresh Farm Produce Co.",
+    reorderLevel: 8,
+    maxStockLevel: 30,
+    shelfLifeDays: 5,
+    storageRequirements: "Room temperature until ripe, then refrigerated",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-22T11:30:00Z",
+  },
+  {
+    id: "ingredient_006",
+    name: "Pizza Dough",
+    category: "dry_goods",
+    unitOfMeasure: "kg",
+    unitCost: 1.8,
+    supplierId: "supplier_005",
+    supplierName: "Pacific Dry Goods",
+    reorderLevel: 15,
+    maxStockLevel: 60,
+    shelfLifeDays: 3,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-25T13:45:00Z",
+  },
+  {
+    id: "ingredient_007",
+    name: "Mozzarella Cheese",
+    category: "dairy",
+    unitOfMeasure: "kg",
+    unitCost: 6.5,
+    supplierId: "supplier_003",
+    supplierName: "Golden State Dairy",
+    reorderLevel: 10,
+    maxStockLevel: 40,
+    shelfLifeDays: 21,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-28T10:20:00Z",
+  },
+  {
+    id: "ingredient_008",
+    name: "Tomato Sauce",
+    category: "condiments",
+    unitOfMeasure: "l",
+    unitCost: 2.4,
+    supplierId: "supplier_005",
+    supplierName: "Pacific Dry Goods",
+    reorderLevel: 20,
+    maxStockLevel: 80,
+    shelfLifeDays: 365,
+    storageRequirements: "Room temperature, sealed containers",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-15T15:30:00Z",
+  },
+  {
+    id: "ingredient_009",
+    name: "Chicken Breast",
+    category: "meat",
+    unitOfMeasure: "kg",
+    unitCost: 12.0,
+    supplierId: "supplier_002",
+    supplierName: "Premium Meats & Poultry",
+    reorderLevel: 8,
+    maxStockLevel: 35,
+    shelfLifeDays: 4,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-20T12:15:00Z",
+  },
+  {
+    id: "ingredient_010",
+    name: "Pasta (Penne)",
+    category: "dry_goods",
+    unitOfMeasure: "kg",
+    unitCost: 1.2,
+    supplierId: "supplier_005",
+    supplierName: "Pacific Dry Goods",
+    reorderLevel: 25,
+    maxStockLevel: 100,
+    shelfLifeDays: 730,
+    storageRequirements: "Room temperature, dry place",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-18T14:45:00Z",
+  },
+  {
+    id: "ingredient_011",
+    name: "Olive Oil (Extra Virgin)",
+    category: "condiments",
+    unitOfMeasure: "l",
+    unitCost: 8.5,
+    supplierId: "supplier_005",
+    supplierName: "Pacific Dry Goods",
+    reorderLevel: 5,
+    maxStockLevel: 20,
+    shelfLifeDays: 540,
+    storageRequirements: "Room temperature, dark place",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-22T09:30:00Z",
+  },
+  {
+    id: "ingredient_012",
+    name: "Onions (Yellow)",
+    category: "produce",
+    unitOfMeasure: "kg",
+    unitCost: 1.5,
+    supplierId: "supplier_001",
+    supplierName: "Fresh Farm Produce Co.",
+    reorderLevel: 15,
+    maxStockLevel: 50,
+    shelfLifeDays: 30,
+    storageRequirements: "Room temperature, dry and ventilated",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-25T11:20:00Z",
+  },
+  {
+    id: "ingredient_013",
+    name: "Bell Peppers (Mixed)",
+    category: "produce",
+    unitOfMeasure: "kg",
+    unitCost: 4.2,
+    supplierId: "supplier_001",
+    supplierName: "Fresh Farm Produce Co.",
+    reorderLevel: 6,
+    maxStockLevel: 25,
+    shelfLifeDays: 10,
+    storageRequirements: "Refrigerated at 2-4°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-28T16:45:00Z",
+  },
+  {
+    id: "ingredient_014",
+    name: "Coca-Cola (500ml)",
+    category: "beverages",
+    unitOfMeasure: "pieces",
+    unitCost: 0.85,
+    supplierId: "supplier_004",
+    supplierName: "Bay Area Beverages",
+    reorderLevel: 100,
+    maxStockLevel: 500,
+    shelfLifeDays: 365,
+    storageRequirements: "Room temperature or refrigerated",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-20T13:30:00Z",
+  },
+  {
+    id: "ingredient_015",
+    name: "French Fries (Frozen)",
+    category: "produce",
+    unitOfMeasure: "kg",
+    unitCost: 2.2,
+    supplierId: "supplier_001",
+    supplierName: "Fresh Farm Produce Co.",
+    reorderLevel: 20,
+    maxStockLevel: 80,
+    shelfLifeDays: 365,
+    storageRequirements: "Frozen at -18°C",
+    isActive: true,
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-24T10:15:00Z",
+  },
+];
+
+// Mock Products with Recipes
+export const mockProducts: Product[] = [
+  {
+    id: "product_001",
+    name: "Classic Cheeseburger",
+    category: "Burgers",
+    description:
+      "Juicy beef patty with cheddar cheese, lettuce, tomato on a fresh bun",
+    recipe: [
+      {
+        ingredientId: "ingredient_001",
+        ingredientName: "Ground Beef (80/20)",
+        quantity: 0.15,
+        unitOfMeasure: "kg",
+        cost: 1.28,
+      },
+      {
+        ingredientId: "ingredient_002",
+        ingredientName: "Hamburger Buns",
+        quantity: 1,
+        unitOfMeasure: "pieces",
+        cost: 0.45,
+      },
+      {
+        ingredientId: "ingredient_003",
+        ingredientName: "Cheddar Cheese Slices",
+        quantity: 1,
+        unitOfMeasure: "pieces",
+        cost: 0.35,
+      },
+      {
+        ingredientId: "ingredient_004",
+        ingredientName: "Lettuce (Iceberg)",
+        quantity: 0.03,
+        unitOfMeasure: "kg",
+        cost: 0.08,
+      },
+      {
+        ingredientId: "ingredient_005",
+        ingredientName: "Tomatoes (Fresh)",
+        quantity: 0.05,
+        unitOfMeasure: "kg",
+        cost: 0.16,
+      },
+    ],
+    sellingPrice: 12.99,
+    totalIngredientCost: 2.32,
+    grossMargin: 82.14,
+    foodCostPercentage: 17.86,
+    preparationTime: 8,
+    posProductId: "item_001",
+    isActive: true,
+    availableAtLocations: ["loc_001", "loc_002", "loc_003"],
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-15T10:30:00Z",
+  },
+  {
+    id: "product_002",
+    name: "Margherita Pizza",
+    category: "Pizza",
+    description:
+      "Fresh mozzarella, tomato sauce, and basil on our signature dough",
+    recipe: [
+      {
+        ingredientId: "ingredient_006",
+        ingredientName: "Pizza Dough",
+        quantity: 0.25,
+        unitOfMeasure: "kg",
+        cost: 0.45,
+      },
+      {
+        ingredientId: "ingredient_007",
+        ingredientName: "Mozzarella Cheese",
+        quantity: 0.12,
+        unitOfMeasure: "kg",
+        cost: 0.78,
+      },
+      {
+        ingredientId: "ingredient_008",
+        ingredientName: "Tomato Sauce",
+        quantity: 0.08,
+        unitOfMeasure: "l",
+        cost: 0.19,
+      },
+      {
+        ingredientId: "ingredient_011",
+        ingredientName: "Olive Oil (Extra Virgin)",
+        quantity: 0.01,
+        unitOfMeasure: "l",
+        cost: 0.09,
+      },
+    ],
+    sellingPrice: 16.99,
+    totalIngredientCost: 1.51,
+    grossMargin: 91.11,
+    foodCostPercentage: 8.89,
+    preparationTime: 15,
+    posProductId: "item_002",
+    isActive: true,
+    availableAtLocations: ["loc_001", "loc_002", "loc_003"],
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-18T14:20:00Z",
+  },
+  {
+    id: "product_003",
+    name: "Grilled Chicken Pasta",
+    category: "Pasta",
+    description: "Grilled chicken breast over penne pasta with vegetables",
+    recipe: [
+      {
+        ingredientId: "ingredient_009",
+        ingredientName: "Chicken Breast",
+        quantity: 0.18,
+        unitOfMeasure: "kg",
+        cost: 2.16,
+      },
+      {
+        ingredientId: "ingredient_010",
+        ingredientName: "Pasta (Penne)",
+        quantity: 0.12,
+        unitOfMeasure: "kg",
+        cost: 0.14,
+      },
+      {
+        ingredientId: "ingredient_013",
+        ingredientName: "Bell Peppers (Mixed)",
+        quantity: 0.08,
+        unitOfMeasure: "kg",
+        cost: 0.34,
+      },
+      {
+        ingredientId: "ingredient_012",
+        ingredientName: "Onions (Yellow)",
+        quantity: 0.05,
+        unitOfMeasure: "kg",
+        cost: 0.08,
+      },
+      {
+        ingredientId: "ingredient_011",
+        ingredientName: "Olive Oil (Extra Virgin)",
+        quantity: 0.02,
+        unitOfMeasure: "l",
+        cost: 0.17,
+      },
+    ],
+    sellingPrice: 18.99,
+    totalIngredientCost: 2.89,
+    grossMargin: 84.78,
+    foodCostPercentage: 15.22,
+    preparationTime: 12,
+    posProductId: "item_003",
+    isActive: true,
+    availableAtLocations: ["loc_001", "loc_002", "loc_003"],
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-20T09:45:00Z",
+  },
+  {
+    id: "product_004",
+    name: "French Fries",
+    category: "Sides",
+    description: "Crispy golden french fries",
+    recipe: [
+      {
+        ingredientId: "ingredient_015",
+        ingredientName: "French Fries (Frozen)",
+        quantity: 0.15,
+        unitOfMeasure: "kg",
+        cost: 0.33,
+      },
+    ],
+    sellingPrice: 4.99,
+    totalIngredientCost: 0.33,
+    grossMargin: 93.39,
+    foodCostPercentage: 6.61,
+    preparationTime: 5,
+    posProductId: "item_004",
+    isActive: true,
+    availableAtLocations: ["loc_001", "loc_002", "loc_003"],
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-22T11:15:00Z",
+  },
+  {
+    id: "product_005",
+    name: "Coca-Cola",
+    category: "Beverages",
+    description: "Refreshing Coca-Cola 500ml",
+    recipe: [
+      {
+        ingredientId: "ingredient_014",
+        ingredientName: "Coca-Cola (500ml)",
+        quantity: 1,
+        unitOfMeasure: "pieces",
+        cost: 0.85,
+      },
+    ],
+    sellingPrice: 2.99,
+    totalIngredientCost: 0.85,
+    grossMargin: 71.57,
+    foodCostPercentage: 28.43,
+    preparationTime: 1,
+    posProductId: "item_005",
+    isActive: true,
+    availableAtLocations: ["loc_001", "loc_002", "loc_003"],
+    createdAt: "2024-01-01T08:00:00Z",
+    updatedAt: "2024-01-25T16:30:00Z",
+  },
+];
+
+// Mock Stock Levels
+export const mockStockLevels: StockLevel[] = [
+  // Location 1 - Downtown
+  {
+    id: "stock_001",
+    ingredientId: "ingredient_001",
+    ingredientName: "Ground Beef (80/20)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 25.5,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T14:30:00Z",
+    lastStockTake: "2024-01-28T08:00:00Z",
+    expirationDate: "2024-01-31T23:59:59Z",
+    batchNumber: "BEEF240128",
+  },
+  {
+    id: "stock_002",
+    ingredientId: "ingredient_002",
+    ingredientName: "Hamburger Buns",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 45,
+    unitOfMeasure: "pieces",
+    stockStatus: "low_stock",
+    lastUpdated: "2024-01-28T16:15:00Z",
+    lastStockTake: "2024-01-28T08:00:00Z",
+    expirationDate: "2024-02-02T23:59:59Z",
+    batchNumber: "BUNS240127",
+  },
+  {
+    id: "stock_003",
+    ingredientId: "ingredient_003",
+    ingredientName: "Cheddar Cheese Slices",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 180,
+    unitOfMeasure: "pieces",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T12:45:00Z",
+    lastStockTake: "2024-01-28T08:00:00Z",
+    expirationDate: "2024-02-11T23:59:59Z",
+    batchNumber: "CHED240125",
+  },
+  {
+    id: "stock_004",
+    ingredientId: "ingredient_004",
+    ingredientName: "Lettuce (Iceberg)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 8.2,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T11:20:00Z",
+    lastStockTake: "2024-01-28T08:00:00Z",
+    expirationDate: "2024-02-04T23:59:59Z",
+    batchNumber: "LETT240126",
+  },
+  {
+    id: "stock_005",
+    ingredientId: "ingredient_005",
+    ingredientName: "Tomatoes (Fresh)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 12.8,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T13:30:00Z",
+    lastStockTake: "2024-01-28T08:00:00Z",
+    expirationDate: "2024-02-02T23:59:59Z",
+    batchNumber: "TOMA240127",
+  },
+  // Location 2 - Mall
+  {
+    id: "stock_006",
+    ingredientId: "ingredient_001",
+    ingredientName: "Ground Beef (80/20)",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    currentStock: 18.3,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T15:45:00Z",
+    lastStockTake: "2024-01-28T09:00:00Z",
+    expirationDate: "2024-01-31T23:59:59Z",
+    batchNumber: "BEEF240128",
+  },
+  {
+    id: "stock_007",
+    ingredientId: "ingredient_006",
+    ingredientName: "Pizza Dough",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    currentStock: 22.5,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T10:30:00Z",
+    lastStockTake: "2024-01-28T09:00:00Z",
+    expirationDate: "2024-01-31T23:59:59Z",
+    batchNumber: "DOUGH240128",
+  },
+  {
+    id: "stock_008",
+    ingredientId: "ingredient_007",
+    ingredientName: "Mozzarella Cheese",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    currentStock: 15.8,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T14:15:00Z",
+    lastStockTake: "2024-01-28T09:00:00Z",
+    expirationDate: "2024-02-18T23:59:59Z",
+    batchNumber: "MOZZ240125",
+  },
+  // Location 3 - Airport
+  {
+    id: "stock_009",
+    ingredientId: "ingredient_014",
+    ingredientName: "Coca-Cola (500ml)",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    currentStock: 85,
+    unitOfMeasure: "pieces",
+    stockStatus: "low_stock",
+    lastUpdated: "2024-01-28T17:00:00Z",
+    lastStockTake: "2024-01-28T07:30:00Z",
+    expirationDate: "2024-12-31T23:59:59Z",
+    batchNumber: "COLA240120",
+  },
+  {
+    id: "stock_010",
+    ingredientId: "ingredient_015",
+    ingredientName: "French Fries (Frozen)",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    currentStock: 35.2,
+    unitOfMeasure: "kg",
+    stockStatus: "in_stock",
+    lastUpdated: "2024-01-28T16:30:00Z",
+    lastStockTake: "2024-01-28T07:30:00Z",
+    expirationDate: "2024-12-31T23:59:59Z",
+    batchNumber: "FRIES240115",
+  },
+];
+
+// Mock Stock Movements (Audit Trail)
+export const mockStockMovements: StockMovement[] = [
+  {
+    id: "movement_001",
+    ingredientId: "ingredient_001",
+    ingredientName: "Ground Beef (80/20)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    movementType: "out",
+    quantity: 1.5,
+    unitOfMeasure: "kg",
+    reason: "sale",
+    orderId: "order_001",
+    staffId: "staff_001",
+    staffName: "John Smith",
+    notes: "Cheeseburger orders during lunch rush",
+    timestamp: "2024-01-28T12:30:00Z",
+    previousStock: 27.0,
+    newStock: 25.5,
+  },
+  {
+    id: "movement_002",
+    ingredientId: "ingredient_002",
+    ingredientName: "Hamburger Buns",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    movementType: "out",
+    quantity: 15,
+    unitOfMeasure: "pieces",
+    reason: "sale",
+    orderId: "order_002",
+    staffId: "staff_002",
+    staffName: "Sarah Johnson",
+    notes: "Burger orders during lunch",
+    timestamp: "2024-01-28T13:15:00Z",
+    previousStock: 60,
+    newStock: 45,
+  },
+  {
+    id: "movement_003",
+    ingredientId: "ingredient_004",
+    ingredientName: "Lettuce (Iceberg)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    movementType: "out",
+    quantity: 0.5,
+    unitOfMeasure: "kg",
+    reason: "spoilage",
+    staffId: "staff_003",
+    staffName: "Mike Wilson",
+    notes: "Outer leaves turned brown, discarded",
+    timestamp: "2024-01-28T09:30:00Z",
+    previousStock: 8.7,
+    newStock: 8.2,
+  },
+  {
+    id: "movement_004",
+    ingredientId: "ingredient_007",
+    ingredientName: "Mozzarella Cheese",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    movementType: "in",
+    quantity: 20.0,
+    unitOfMeasure: "kg",
+    reason: "delivery",
+    staffId: "staff_004",
+    staffName: "Lisa Chen",
+    notes: "Weekly delivery from Golden State Dairy",
+    timestamp: "2024-01-28T08:45:00Z",
+    previousStock: 8.8,
+    newStock: 28.8,
+  },
+  {
+    id: "movement_005",
+    ingredientId: "ingredient_014",
+    ingredientName: "Coca-Cola (500ml)",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    movementType: "out",
+    quantity: 25,
+    unitOfMeasure: "pieces",
+    reason: "sale",
+    staffId: "staff_005",
+    staffName: "Robert Kim",
+    notes: "High beverage sales during morning rush",
+    timestamp: "2024-01-28T10:00:00Z",
+    previousStock: 110,
+    newStock: 85,
+  },
+  {
+    id: "movement_006",
+    ingredientId: "ingredient_001",
+    ingredientName: "Ground Beef (80/20)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    movementType: "out",
+    quantity: 2.0,
+    unitOfMeasure: "kg",
+    reason: "over_prep",
+    staffId: "staff_006",
+    staffName: "David Brown",
+    notes: "Prepared too many patties, had to discard excess",
+    timestamp: "2024-01-27T18:30:00Z",
+    previousStock: 29.0,
+    newStock: 27.0,
+  },
+];
+
+// Mock Wastage Reports
+export const mockWastageReports: WastageReport[] = [
+  {
+    id: "wastage_001",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    ingredientId: "ingredient_001",
+    ingredientName: "Ground Beef (80/20)",
+    period: "2024-01",
+    expectedUsage: 45.2,
+    actualUsage: 48.7,
+    variance: 3.5,
+    variancePercentage: 7.74,
+    estimatedWastageCost: 29.75,
+    primaryReasons: ["over_prep", "spoilage"],
+    generatedAt: "2024-01-28T18:00:00Z",
+  },
+  {
+    id: "wastage_002",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    ingredientId: "ingredient_004",
+    ingredientName: "Lettuce (Iceberg)",
+    period: "2024-01",
+    expectedUsage: 12.8,
+    actualUsage: 15.3,
+    variance: 2.5,
+    variancePercentage: 19.53,
+    estimatedWastageCost: 7.0,
+    primaryReasons: ["spoilage"],
+    generatedAt: "2024-01-28T18:00:00Z",
+  },
+  {
+    id: "wastage_003",
+    locationId: "loc_002",
+    locationName: "SavorSync Marina",
+    ingredientId: "ingredient_006",
+    ingredientName: "Pizza Dough",
+    period: "2024-01",
+    expectedUsage: 28.5,
+    actualUsage: 30.2,
+    variance: 1.7,
+    variancePercentage: 5.96,
+    estimatedWastageCost: 3.06,
+    primaryReasons: ["over_prep"],
+    generatedAt: "2024-01-28T18:00:00Z",
+  },
+];
+
+// Mock Inventory Alerts
+export const mockInventoryAlerts: InventoryAlert[] = [
+  {
+    id: "alert_001",
+    type: "low_stock",
+    ingredientId: "ingredient_002",
+    ingredientName: "Hamburger Buns",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 45,
+    threshold: 50,
+    message:
+      "Hamburger Buns are running low at SavorSync Downtown (45 pieces remaining)",
+    severity: "medium",
+    isResolved: false,
+    createdAt: "2024-01-28T16:15:00Z",
+  },
+  {
+    id: "alert_002",
+    type: "low_stock",
+    ingredientId: "ingredient_014",
+    ingredientName: "Coca-Cola (500ml)",
+    locationId: "loc_003",
+    locationName: "SavorSync Mission",
+    currentStock: 85,
+    threshold: 100,
+    message:
+      "Coca-Cola (500ml) is running low at SavorSync Mission (85 pieces remaining)",
+    severity: "medium",
+    isResolved: false,
+    createdAt: "2024-01-28T17:00:00Z",
+  },
+  {
+    id: "alert_003",
+    type: "expiring_soon",
+    ingredientId: "ingredient_001",
+    ingredientName: "Ground Beef (80/20)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 25.5,
+    threshold: 3,
+    message: "Ground Beef (80/20) expires in 3 days at SavorSync Downtown",
+    severity: "high",
+    isResolved: false,
+    createdAt: "2024-01-28T14:30:00Z",
+  },
+  {
+    id: "alert_004",
+    type: "expiring_soon",
+    ingredientId: "ingredient_005",
+    ingredientName: "Tomatoes (Fresh)",
+    locationId: "loc_001",
+    locationName: "SavorSync Downtown",
+    currentStock: 12.8,
+    threshold: 5,
+    message: "Tomatoes (Fresh) expire in 5 days at SavorSync Downtown",
+    severity: "medium",
+    isResolved: false,
+    createdAt: "2024-01-28T13:30:00Z",
+  },
+];
+
+// Inventory Helper Functions
+export const getStockLevelsByLocation = (locationId: string): StockLevel[] => {
+  return mockStockLevels.filter((stock) => stock.locationId === locationId);
+};
+
+export const getStockMovementsByLocation = (
+  locationId: string
+): StockMovement[] => {
+  return mockStockMovements.filter(
+    (movement) => movement.locationId === locationId
+  );
+};
+
+export const getStockMovementsByIngredient = (
+  ingredientId: string
+): StockMovement[] => {
+  return mockStockMovements.filter(
+    (movement) => movement.ingredientId === ingredientId
+  );
+};
+
+export const getWastageReportsByLocation = (
+  locationId: string
+): WastageReport[] => {
+  return mockWastageReports.filter(
+    (report) => report.locationId === locationId
+  );
+};
+
+export const getInventoryAlertsByLocation = (
+  locationId: string
+): InventoryAlert[] => {
+  return mockInventoryAlerts.filter((alert) => alert.locationId === locationId);
+};
+
+export const getActiveInventoryAlerts = (): InventoryAlert[] => {
+  return mockInventoryAlerts.filter((alert) => !alert.isResolved);
+};
+
+export const getLowStockItems = (locationId?: string): StockLevel[] => {
+  const stockLevels = locationId
+    ? getStockLevelsByLocation(locationId)
+    : mockStockLevels;
+  return stockLevels.filter(
+    (stock) =>
+      stock.stockStatus === "low_stock" || stock.stockStatus === "out_of_stock"
+  );
 };
 
 // Task Management Mock Data

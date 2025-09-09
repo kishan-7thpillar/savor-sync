@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useAppSelector } from "@/store/hooks";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -14,6 +15,10 @@ import {
   Download,
   PlusCircle,
   Settings,
+  AlertTriangle,
+  TrendingDown,
+  Activity,
+  Users,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,16 +40,461 @@ import { InventoryLogsTable } from "@/components/dashboard/inventory-logs-table"
 import { ManualInventoryUpdateForm } from "@/components/forms/manual-inventory-update-form";
 import { Product, Ingredient } from "@/types/square";
 import {
+  mockIngredients,
+  mockProducts,
+  mockStockLevels,
+  mockStockMovements,
+  mockInventoryAlerts,
+  mockWastageReports,
+  mockSuppliers,
+  getStockLevelsByLocation,
+  getStockMovementsByLocation,
+  getInventoryAlertsByLocation,
+  getWastageReportsByLocation,
+} from "@/data/mockSalesData";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
+// Stock Levels Tab Component
+function StockLevelsTab({
+  selectedLocation,
+  searchQuery,
+}: {
+  selectedLocation: string;
+  searchQuery: string;
+}) {
+  const stockLevels =
+    selectedLocation === "all"
+      ? mockStockLevels
+      : getStockLevelsByLocation(selectedLocation);
+
+  const filteredStockLevels = stockLevels.filter((stock) =>
+    stock.ingredientName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "in_stock":
+        return (
+          <Badge variant="default" className="bg-green-100 text-green-800">
+            In Stock
+          </Badge>
+        );
+      case "low_stock":
+        return (
+          <Badge
+            variant="destructive"
+            className="bg-yellow-100 text-yellow-800"
+          >
+            Low Stock
+          </Badge>
+        );
+      case "out_of_stock":
+        return <Badge variant="destructive">Out of Stock</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Current Stock Levels</h3>
+          <Badge variant="outline">{filteredStockLevels.length} items</Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Ingredient</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Current Stock</TableHead>
+              <TableHead>Unit</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Last Updated</TableHead>
+              <TableHead>Expiration</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredStockLevels.map((stock) => (
+              <TableRow key={stock.id}>
+                <TableCell className="font-medium">
+                  {stock.ingredientName}
+                </TableCell>
+                <TableCell>{stock.locationName}</TableCell>
+                <TableCell>{stock.currentStock}</TableCell>
+                <TableCell>{stock.unitOfMeasure}</TableCell>
+                <TableCell>{getStatusBadge(stock.stockStatus)}</TableCell>
+                <TableCell>
+                  {new Date(stock.lastUpdated).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  {stock.expirationDate
+                    ? new Date(stock.expirationDate).toLocaleDateString()
+                    : "N/A"}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Stock Movements Tab Component
+function StockMovementsTab({
+  selectedLocation,
+  searchQuery,
+}: {
+  selectedLocation: string;
+  searchQuery: string;
+}) {
+  const movements =
+    selectedLocation === "all"
+      ? mockStockMovements
+      : mockStockMovements.filter((m) => m.locationId === selectedLocation);
+
+  const filteredMovements = movements.filter((movement) =>
+    movement.ingredientName.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const getMovementBadge = (type: string) => {
+    return type === "in" ? (
+      <Badge variant="default" className="bg-green-100 text-green-800">
+        IN
+      </Badge>
+    ) : (
+      <Badge variant="destructive" className="bg-red-100 text-red-800">
+        OUT
+      </Badge>
+    );
+  };
+
+  const getReasonBadge = (reason: string) => {
+    const reasonColors: Record<string, string> = {
+      sale: "bg-blue-100 text-blue-800",
+      delivery: "bg-green-100 text-green-800",
+      spoilage: "bg-red-100 text-red-800",
+      over_prep: "bg-yellow-100 text-yellow-800",
+      manual_adjustment: "bg-purple-100 text-purple-800",
+    };
+    return (
+      <Badge variant="outline" className={reasonColors[reason] || ""}>
+        {reason.replace("_", " ")}
+      </Badge>
+    );
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Stock Movement History</h3>
+          <Badge variant="outline">{filteredMovements.length} movements</Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Ingredient</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead>Quantity</TableHead>
+              <TableHead>Reason</TableHead>
+              <TableHead>Staff</TableHead>
+              <TableHead>Notes</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredMovements.map((movement) => (
+              <TableRow key={movement.id}>
+                <TableCell>
+                  {new Date(movement.timestamp).toLocaleDateString()}
+                </TableCell>
+                <TableCell className="font-medium">
+                  {movement.ingredientName}
+                </TableCell>
+                <TableCell>{movement.locationName}</TableCell>
+                <TableCell>{getMovementBadge(movement.movementType)}</TableCell>
+                <TableCell>
+                  {movement.quantity} {movement.unitOfMeasure}
+                </TableCell>
+                <TableCell>{getReasonBadge(movement.reason)}</TableCell>
+                <TableCell>{movement.staffName}</TableCell>
+                <TableCell className="max-w-xs truncate">
+                  {movement.notes}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Inventory Alerts Tab Component
+function InventoryAlertsTab({
+  selectedLocation,
+}: {
+  selectedLocation: string;
+}) {
+  const alerts =
+    selectedLocation === "all"
+      ? mockInventoryAlerts
+      : mockInventoryAlerts.filter((a) => a.locationId === selectedLocation);
+
+  const getSeverityBadge = (severity: string) => {
+    const severityColors: Record<string, string> = {
+      low: "bg-gray-100 text-gray-800",
+      medium: "bg-yellow-100 text-yellow-800",
+      high: "bg-orange-100 text-orange-800",
+      critical: "bg-red-100 text-red-800",
+    };
+    return (
+      <Badge variant="outline" className={severityColors[severity]}>
+        {severity.toUpperCase()}
+      </Badge>
+    );
+  };
+
+  const getTypeBadge = (type: string) => {
+    const typeColors: Record<string, string> = {
+      low_stock: "bg-yellow-100 text-yellow-800",
+      out_of_stock: "bg-red-100 text-red-800",
+      expiring_soon: "bg-orange-100 text-orange-800",
+      overstock: "bg-blue-100 text-blue-800",
+    };
+    return (
+      <Badge variant="outline" className={typeColors[type]}>
+        {type.replace("_", " ")}
+      </Badge>
+    );
+  };
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Inventory Alerts</h3>
+          <Badge variant="outline">{alerts.length} alerts</Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Ingredient</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Current Stock</TableHead>
+              <TableHead>Severity</TableHead>
+              <TableHead>Message</TableHead>
+              <TableHead>Created</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {alerts.map((alert) => (
+              <TableRow key={alert.id}>
+                <TableCell>{getTypeBadge(alert.type)}</TableCell>
+                <TableCell className="font-medium">
+                  {alert.ingredientName}
+                </TableCell>
+                <TableCell>{alert.locationName}</TableCell>
+                <TableCell>{alert.currentStock}</TableCell>
+                <TableCell>{getSeverityBadge(alert.severity)}</TableCell>
+                <TableCell className="max-w-xs">{alert.message}</TableCell>
+                <TableCell>
+                  {new Date(alert.createdAt).toLocaleDateString()}
+                </TableCell>
+                <TableCell>
+                  {alert.isResolved ? (
+                    <Badge
+                      variant="default"
+                      className="bg-green-100 text-green-800"
+                    >
+                      Resolved
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive">Active</Badge>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Wastage Reports Tab Component
+function WastageReportsTab({ selectedLocation }: { selectedLocation: string }) {
+  const reports =
+    selectedLocation === "all"
+      ? mockWastageReports
+      : mockWastageReports.filter((r) => r.locationId === selectedLocation);
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Wastage Reports</h3>
+          <Badge variant="outline">{reports.length} reports</Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Period</TableHead>
+              <TableHead>Ingredient</TableHead>
+              <TableHead>Location</TableHead>
+              <TableHead>Expected Usage</TableHead>
+              <TableHead>Actual Usage</TableHead>
+              <TableHead>Variance</TableHead>
+              <TableHead>Variance %</TableHead>
+              <TableHead>Estimated Cost</TableHead>
+              <TableHead>Primary Reasons</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {reports.map((report) => (
+              <TableRow key={report.id}>
+                <TableCell>{report.period}</TableCell>
+                <TableCell className="font-medium">
+                  {report.ingredientName}
+                </TableCell>
+                <TableCell>{report.locationName}</TableCell>
+                <TableCell>{report.expectedUsage}</TableCell>
+                <TableCell>{report.actualUsage}</TableCell>
+                <TableCell
+                  className={
+                    report.variance > 0 ? "text-red-600" : "text-green-600"
+                  }
+                >
+                  {report.variance > 0 ? "+" : ""}
+                  {report.variance}
+                </TableCell>
+                <TableCell
+                  className={
+                    report.variancePercentage > 0
+                      ? "text-red-600"
+                      : "text-green-600"
+                  }
+                >
+                  {report.variancePercentage > 0 ? "+" : ""}
+                  {report.variancePercentage.toFixed(1)}%
+                </TableCell>
+                <TableCell>${report.estimatedWastageCost.toFixed(2)}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {report.primaryReasons.map((reason, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {reason.replace("_", " ")}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Suppliers Tab Component
+function SuppliersTab({ searchQuery }: { searchQuery: string }) {
+  const filteredSuppliers = mockSuppliers.filter(
+    (supplier) =>
+      supplier.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      supplier.contactPerson.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <Card>
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold">Suppliers</h3>
+          <Badge variant="outline">{filteredSuppliers.length} suppliers</Badge>
+        </div>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Supplier Name</TableHead>
+              <TableHead>Contact Person</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Phone</TableHead>
+              <TableHead>Categories</TableHead>
+              <TableHead>Lead Time</TableHead>
+              <TableHead>Payment Terms</TableHead>
+              <TableHead>Rating</TableHead>
+              <TableHead>Status</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredSuppliers.map((supplier) => (
+              <TableRow key={supplier.id}>
+                <TableCell className="font-medium">{supplier.name}</TableCell>
+                <TableCell>{supplier.contactPerson}</TableCell>
+                <TableCell>{supplier.email}</TableCell>
+                <TableCell>{supplier.phone}</TableCell>
+                <TableCell>
+                  <div className="flex flex-wrap gap-1">
+                    {supplier.categories.map((category, index) => (
+                      <Badge key={index} variant="outline" className="text-xs">
+                        {category}
+                      </Badge>
+                    ))}
+                  </div>
+                </TableCell>
+                <TableCell>{supplier.leadTimeDays} days</TableCell>
+                <TableCell>{supplier.paymentTerms}</TableCell>
+                <TableCell>
+                  <div className="flex items-center">
+                    <span className="mr-1">⭐</span>
+                    {supplier.rating.toFixed(1)}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  {supplier.isActive ? (
+                    <Badge
+                      variant="default"
+                      className="bg-green-100 text-green-800"
+                    >
+                      Active
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary">Inactive</Badge>
+                  )}
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function InventoryPage() {
   const [showAddItem, setShowAddItem] = useState(false);
   const [activeTab, setActiveTab] = useState("products");
-  const [selectedLocation, setSelectedLocation] = useState("all");
+  const selectedLocation =
+    useAppSelector((state) => state.location.selectedLocation) || "all";
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -101,15 +551,29 @@ export default function InventoryPage() {
     setSelectedItems(selectedIds);
   };
 
-  const handleManualUpdate = (ingredientId: string) => {
-    setSelectedIngredientId(ingredientId);
-    setShowManualUpdate(true);
+  const handleManualUpdate = (
+    ingredientId: string,
+    newQuantity: number,
+    reason: string
+  ) => {
+    // Here you would typically call an API to update the inventory
+    console.log("Manual update:", { ingredientId, newQuantity, reason });
+
+    // For now, we'll just trigger a refresh
+    setRefreshTrigger((prev) => prev + 1);
+    setShowManualUpdate(false);
+    setSelectedIngredientId(null);
   };
 
   const handleManualUpdateSuccess = () => {
+    setRefreshTrigger((prev) => prev + 1);
     setShowManualUpdate(false);
     setSelectedIngredientId(null);
-    setRefreshTrigger((prev) => prev + 1);
+  };
+
+  const handleManualUpdateClick = (ingredientId: string) => {
+    setSelectedIngredientId(ingredientId);
+    setShowManualUpdate(true);
   };
 
   // Mock data for bulk actions
@@ -196,46 +660,35 @@ export default function InventoryPage() {
               <Package className="mr-2 h-4 w-4" />
               Products
             </TabsTrigger>
-            <TabsTrigger value="ingredients" className="flex items-center">
+            {/* <TabsTrigger value="ingredients" className="flex items-center">
               <Package2 className="mr-2 h-4 w-4" />
               Ingredients
-            </TabsTrigger>
-            <TabsTrigger value="categories" className="flex items-center">
-              <Filter className="mr-2 h-4 w-4" />
-              Categories
-            </TabsTrigger>
-            {/* <TabsTrigger value="orders" className="flex items-center">
-              <History className="mr-2 h-4 w-4" />
-              Orders
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="flex items-center">
-              <BarChart3 className="mr-2 h-4 w-4" />
-              Reports
-            </TabsTrigger>
-            <TabsTrigger value="logs" className="flex items-center">
-              <History className="mr-2 h-4 w-4" />
-              Inventory Logs
             </TabsTrigger> */}
+            <TabsTrigger value="stock-levels" className="flex items-center">
+              <Package className="mr-2 h-4 w-4" />
+              Stock Levels
+            </TabsTrigger>
+            <TabsTrigger value="movements" className="flex items-center">
+              <Activity className="mr-2 h-4 w-4" />
+              Movements
+            </TabsTrigger>
+            <TabsTrigger value="alerts" className="flex items-center">
+              <AlertTriangle className="mr-2 h-4 w-4" />
+              Alerts
+            </TabsTrigger>
+            <TabsTrigger value="wastage" className="flex items-center">
+              <TrendingDown className="mr-2 h-4 w-4" />
+              Wastage
+            </TabsTrigger>
+            <TabsTrigger value="suppliers" className="flex items-center">
+              <Users className="mr-2 h-4 w-4" />
+              Suppliers
+            </TabsTrigger>
           </TabsList>
         </div>
 
         <div className="flex flex-col space-y-4 mt-4 md:flex-row md:items-center md:justify-between md:space-y-0">
           <div className="flex flex-wrap items-center gap-2">
-            <Select
-              value={selectedLocation}
-              onValueChange={setSelectedLocation}
-            >
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Location" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Locations</SelectItem>
-                <SelectItem value="downtown">Downtown</SelectItem>
-                <SelectItem value="westside">Westside</SelectItem>
-                <SelectItem value="eastside">Eastside</SelectItem>
-              </SelectContent>
-            </Select>
-
             <Select
               value={selectedCategory}
               onValueChange={setSelectedCategory}
@@ -348,7 +801,7 @@ export default function InventoryPage() {
           </div>
         </TabsContent>
 
-        <TabsContent value="ingredients" className="space-y-4 mt-4">
+        {/* <TabsContent value="ingredients" className="space-y-4 mt-4">
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div
               className={showBulkActions ? "lg:col-span-3" : "lg:col-span-4"}
@@ -360,7 +813,7 @@ export default function InventoryPage() {
                 stockFilter={stockFilter}
                 selectedItems={selectedItems}
                 onSelectionChange={handleSelectionChange}
-                onManualUpdate={handleManualUpdate}
+                onManualUpdate={handleManualUpdateClick}
                 refreshTrigger={refreshTrigger}
               />
             </div>
@@ -376,26 +829,32 @@ export default function InventoryPage() {
               </div>
             )}
           </div>
-        </TabsContent>
+        </TabsContent> */}
 
-        <TabsContent value="categories" className="space-y-4 mt-4">
-          <InventoryCategories />
-        </TabsContent>
-
-        <TabsContent value="orders" className="space-y-4 mt-4">
-          <InventoryOrders />
-        </TabsContent>
-
-        <TabsContent value="reports" className="space-y-4 mt-4">
-          <InventoryReports />
-        </TabsContent>
-
-        <TabsContent value="logs" className="space-y-4 mt-4">
-          <InventoryLogsTable
-            locationId={
-              selectedLocation !== "all" ? selectedLocation : undefined
-            }
+        <TabsContent value="stock-levels">
+          <StockLevelsTab
+            selectedLocation={selectedLocation}
+            searchQuery={searchQuery}
           />
+        </TabsContent>
+
+        <TabsContent value="movements">
+          <StockMovementsTab
+            selectedLocation={selectedLocation}
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
+
+        <TabsContent value="alerts">
+          <InventoryAlertsTab selectedLocation={selectedLocation} />
+        </TabsContent>
+
+        <TabsContent value="wastage">
+          <WastageReportsTab selectedLocation={selectedLocation} />
+        </TabsContent>
+
+        <TabsContent value="suppliers">
+          <SuppliersTab searchQuery={searchQuery} />
         </TabsContent>
       </Tabs>
 
