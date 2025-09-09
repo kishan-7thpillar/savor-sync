@@ -23,9 +23,17 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { LogOut, Settings, User } from "lucide-react";
-import type { Profile, Location } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import { setSelectedLocation, setLocations } from "@/store/locationSlice";
+import { mockLocations } from "@/data/mockSalesData";
+
+// Use the location type from mockSalesData
+interface Location {
+  id: string;
+  name: string;
+  isActive: boolean;
+}
 
 interface HeaderProps {
   user: any;
@@ -42,26 +50,20 @@ export function Header({ user, profile }: HeaderProps) {
   const supabase = createClient();
 
   useEffect(() => {
-    if (profile?.organization_id) {
-      fetchLocations();
-    }
-  }, [profile?.organization_id]);
+    // Use mock locations instead of fetching from Supabase
+    fetchLocations();
+  }, []);
 
-  const fetchLocations = async () => {
-    if (!profile?.organization_id) return;
+  const fetchLocations = () => {
+    // Map mock locations to match our Location interface
+    const formattedLocations = mockLocations.map((location) => ({
+      id: location.id,
+      name: location.name,
+      isActive: location.isActive,
+    }));
 
-    const { data, error } = await supabase
-      .from("locations")
-      .select("*")
-      .eq("organization_id", profile.organization_id)
-      .eq("is_active", true);
-
-    console.log(data);
-
-    if (data && !error) {
-      setLocationsList(data);
-      dispatch(setLocations(data));
-    }
+    setLocationsList(formattedLocations);
+    dispatch(setLocations(formattedLocations));
   };
 
   const handleSignOut = async () => {
@@ -96,7 +98,7 @@ export function Header({ user, profile }: HeaderProps) {
                   <div className="flex items-center space-x-2">
                     <span>{location.name}</span>
                     <Badge variant="secondary" className="text-xs">
-                      {location.is_active ? "Active" : "Inactive"}
+                      {location.isActive ? "Active" : "Inactive"}
                     </Badge>
                   </div>
                 </SelectItem>

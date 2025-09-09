@@ -45,7 +45,7 @@ export function Sidebar({ className }: SidebarProps) {
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center border-b px-6">
-        <Link href="/dashboard" className="flex items-center space-x-2">
+        <Link href="/dashboard/sales" className="flex items-center space-x-2">
           <BarChart3 className="h-6 w-6" />
           <span className="text-xl font-bold">SavorSync</span>
         </Link>

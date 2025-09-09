@@ -1,242 +1,197 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const SQUARE_API_URL = "https://connect.squareupsandbox.com/v2/orders/search";
-const SQUARE_VERSION = "2025-07-16";
-const SQUARE_ACCESS_TOKEN =
-  process.env.SQUARE_ACCESS_TOKEN ||
-  "EAAAl4W2NSeUXRHo4AhPsep9jdnOfxSeQ95sAoejuSzwbdxUFyU2Ye2npf8Pv7Cy";
-const LOCATION_ID = process.env.SQUARE_LOCATION_ID || "LF138PJKQSCHR";
+import {
+  calculateSalesMetrics,
+  calculateGrowthMetrics,
+  getDailySalesData,
+  getHourlySalesData,
+  getChannelDistribution,
+  getTopPerformingItems,
+  getLocationPerformance,
+  filterOrdersByDateRange,
+  getDateRangePresets,
+  DateRange
+} from '@/lib/salesAnalytics';
+import { mockSalesOrders, Order } from '@/data/mockSalesData';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const limit = searchParams.get("limit") || "10";
+    const limit = parseInt(searchParams.get("limit") || "100");
     const timeRange = searchParams.get("timeRange") || "7d";
     const weekStartParam = searchParams.get("weekStart");
+    const locationIds = searchParams.get("locationIds")?.split(',').filter(Boolean) || [];
+    const channels = searchParams.get("channels")?.split(',').filter(Boolean) as Order['channel'][] || [];
 
     // Calculate date range based on timeRange and weekStart
-    let endDate = new Date();
-    let startDate = new Date();
+    let dateRange: DateRange;
+    const presets = getDateRangePresets();
 
     if (weekStartParam) {
       // If weekStart is provided, use it for weekly navigation
-      startDate = new Date(weekStartParam);
-      endDate = new Date(startDate);
+      const startDate = new Date(weekStartParam);
+      const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + 6); // End of the week
+      dateRange = {
+        startDate,
+        endDate,
+        label: 'Custom Week'
+      };
     } else {
       // Default behavior based on timeRange
       switch (timeRange) {
         case "7d":
-          startDate.setDate(endDate.getDate() - 7);
+          dateRange = presets.last7Days;
           break;
         case "30d":
-          startDate.setDate(endDate.getDate() - 30);
+          dateRange = presets.last30Days;
           break;
         case "90d":
-          startDate.setDate(endDate.getDate() - 90);
+          dateRange = presets.last90Days;
           break;
         default:
-          startDate.setDate(endDate.getDate() - 7);
+          dateRange = presets.last7Days;
       }
     }
 
-    const requestBody = {
-      return_entries: true,
-      limit: parseInt(limit),
-      location_ids: [LOCATION_ID],
-      query: {
-        filter: {
-          state_filter: {
-            states: ["COMPLETED"],
-          },
-          date_time_filter: {
-            closed_at: {
-              start_at: startDate.toISOString(),
-              end_at: endDate.toISOString(),
-            },
-          },
-        },
-        sort: {
-          sort_field: "CLOSED_AT",
-          sort_order: "DESC",
-        },
-      },
-    };
-
-    const response = await fetch(SQUARE_API_URL, {
-      method: "POST",
-      headers: {
-        "Square-Version": SQUARE_VERSION,
-        Authorization: `Bearer ${SQUARE_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(requestBody),
-    });
-
-    if (!response.ok) {
-      throw new Error(
-        `Square API error: ${response.status} ${response.statusText}`
-      );
+    // Filter orders based on date range and optional filters
+    let currentOrders = filterOrdersByDateRange(dateRange, locationIds);
+    
+    if (channels.length > 0) {
+      currentOrders = currentOrders.filter(order => channels.includes(order.channel));
     }
 
-    const data = await response.json();
+    // Limit results if specified
+    if (limit < currentOrders.length) {
+      currentOrders = currentOrders.slice(0, limit);
+    }
 
-    // Process the data to extract useful metrics
-    const processedData = processSquareData(data.order_entries || []);
+    // Get previous period data for growth comparison
+    const previousPeriodStart = new Date(dateRange.startDate);
+    const previousPeriodEnd = new Date(dateRange.endDate);
+    const periodLength = previousPeriodEnd.getTime() - previousPeriodStart.getTime();
+    
+    previousPeriodStart.setTime(previousPeriodStart.getTime() - periodLength);
+    previousPeriodEnd.setTime(previousPeriodEnd.getTime() - periodLength);
+    
+    let previousOrders = filterOrdersByDateRange({
+      startDate: previousPeriodStart,
+      endDate: previousPeriodEnd,
+      label: 'Previous Period'
+    }, locationIds);
+    
+    if (channels.length > 0) {
+      previousOrders = previousOrders.filter(order => channels.includes(order.channel));
+    }
+
+    // Calculate all metrics using our analytics functions
+    const metrics = calculateSalesMetrics(currentOrders);
+    const growthMetrics = calculateGrowthMetrics(currentOrders, previousOrders, 'vs previous period');
+    const dailyData = getDailySalesData(currentOrders);
+    const hourlyData = getHourlySalesData(currentOrders);
+    const orderTypeData = getChannelDistribution(currentOrders);
+    const topItems = getTopPerformingItems(currentOrders, 10);
+    const locationPerformance = getLocationPerformance(currentOrders);
+
+    // Format recent orders for backward compatibility
+    const recentOrders = currentOrders.slice(0, 10).map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      date: new Date(order.createdAt).toLocaleString(),
+      items: order.items.map(item => `${item.quantity}x ${item.menuItem.name}`).join(", "),
+      estimatedTotal: order.totalAmount,
+      location: order.locationName,
+      channel: order.channel
+    }));
+
+    // Process data for chart compatibility
+    const processedData = {
+      metrics: {
+        totalSales: metrics.totalSales,
+        totalOrders: metrics.totalOrders,
+        avgOrderValue: metrics.averageOrderValue,
+        salesGrowth: growthMetrics.salesGrowth,
+        orderGrowth: growthMetrics.orderGrowth,
+        aovGrowth: growthMetrics.aovGrowth
+      },
+      dailyData: dailyData.map(day => ({
+        date: day.date,
+        sales: day.sales,
+        orders: day.orders,
+        averageOrderValue: day.averageOrderValue,
+        dayOfWeek: day.dayOfWeek,
+        isWeekend: day.isWeekend
+      })),
+      hourlyData: hourlyData.map(hour => ({
+        hour: hour.hourLabel,
+        hourNumber: hour.hour,
+        sales: hour.sales,
+        orders: hour.orders,
+        averageOrderValue: hour.averageOrderValue
+      })),
+      orderTypeData: orderTypeData.map(channel => ({
+        name: channel.channel.charAt(0).toUpperCase() + channel.channel.slice(1),
+        value: channel.orders,
+        sales: channel.sales,
+        percentage: channel.percentage,
+        color: channel.color
+      })),
+      topItems: topItems.map(item => ({
+        name: item.name,
+        category: item.category,
+        quantity: item.totalQuantity,
+        orders: item.orderCount,
+        estimatedSales: item.totalSales,
+        averagePrice: item.averagePrice,
+        profitMargin: item.profitMargin,
+        rank: item.rank
+      })),
+      recentOrders,
+      locationPerformance: locationPerformance.map(location => ({
+        locationId: location.locationId,
+        locationName: location.locationName,
+        sales: location.sales,
+        orders: location.orders,
+        averageOrderValue: location.averageOrderValue,
+        topChannel: location.topChannel
+      })),
+      summary: {
+        totalRevenue: metrics.totalSales,
+        totalOrders: metrics.totalOrders,
+        totalItems: metrics.totalItems,
+        totalTax: metrics.totalTax,
+        totalDiscounts: metrics.totalDiscounts,
+        totalTips: metrics.totalTips,
+        grossProfit: metrics.grossProfit,
+        profitMargin: metrics.profitMargin,
+        dateRange: dateRange.label,
+        periodStart: dateRange.startDate.toISOString(),
+        periodEnd: dateRange.endDate.toISOString()
+      }
+    };
 
     return NextResponse.json({
       success: true,
       data: processedData,
-      raw: data,
+      meta: {
+        totalRecords: mockSalesOrders.length,
+        filteredRecords: currentOrders.length,
+        dateRange: dateRange.label,
+        filters: {
+          locationIds,
+          channels,
+          timeRange
+        }
+      }
     });
   } catch (error) {
-    console.error("Error fetching Square sales data:", error);
+    console.error("Error processing sales data:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Failed to fetch sales data",
+        error: "Failed to process sales data",
         message: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
   }
-}
-
-function processSquareData(orderEntries: any[]) {
-  let totalSales = 0;
-  let totalOrders = orderEntries.length;
-  const dailyData: {
-    [key: string]: { sales: number; orders: number; date: string };
-  } = {};
-  const itemSales: { [key: string]: { quantity: number; orders: number } } = {};
-  const hourlyData: { [key: string]: number } = {};
-
-  orderEntries.forEach((entry) => {
-    // Extract order details
-    const closedAt = new Date(entry.closed_at);
-    const dateKey = closedAt.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    });
-    const hourKey = closedAt.getHours();
-
-    // Calculate order total (simplified - in real implementation you'd sum line item prices)
-    // For now, we'll estimate based on item count and average prices
-    const orderValue = estimateOrderValue(entry.line_items || []);
-    totalSales += orderValue;
-
-    // Aggregate daily data
-    if (!dailyData[dateKey]) {
-      dailyData[dateKey] = { sales: 0, orders: 0, date: dateKey };
-    }
-    dailyData[dateKey].sales += orderValue;
-    dailyData[dateKey].orders += 1;
-
-    // Aggregate hourly data
-    if (!hourlyData[hourKey]) {
-      hourlyData[hourKey] = 0;
-    }
-    hourlyData[hourKey] += orderValue;
-
-    // Track item sales
-    entry.line_items?.forEach((item: any) => {
-      const itemName = item.name;
-      const quantity = parseInt(item.quantity) || 1;
-
-      if (!itemSales[itemName]) {
-        itemSales[itemName] = { quantity: 0, orders: 0 };
-      }
-      itemSales[itemName].quantity += quantity;
-      itemSales[itemName].orders += 1;
-    });
-  });
-
-  // Convert to arrays for charts
-  const dailyDataArray = Object.values(dailyData).sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
-  );
-
-  const hourlyDataArray = Array.from({ length: 24 }, (_, hour) => ({
-    hour: formatHour(hour),
-    sales: hourlyData[hour] || 0,
-  })).filter((item) => item.sales > 0);
-
-  // Top performing items
-  const topItems = Object.entries(itemSales)
-    .map(([name, data]) => ({
-      name,
-      quantity: data.quantity,
-      orders: data.orders,
-      estimatedSales: data.quantity * getEstimatedItemPrice(name),
-    }))
-    .sort((a, b) => b.estimatedSales - a.estimatedSales)
-    .slice(0, 10);
-
-  // Generate order type distribution (simplified estimation)
-  const orderTypeData = [
-    { name: 'Dine-in', value: Math.round(totalOrders * 0.45), color: '#0088FE' },
-    { name: 'Takeout', value: Math.round(totalOrders * 0.35), color: '#00C49F' },
-    { name: 'Delivery', value: Math.round(totalOrders * 0.20), color: '#FFBB28' },
-  ];
-
-  return {
-    metrics: {
-      totalSales,
-      totalOrders,
-      avgOrderValue: totalOrders > 0 ? totalSales / totalOrders : 0,
-      salesGrowth: 0, // Would need historical data to calculate
-    },
-    dailyData: dailyDataArray,
-    hourlyData: hourlyDataArray,
-    topItems,
-    orderTypeData,
-    recentOrders: orderEntries.slice(0, 5).map((entry) => ({
-      id: entry.order_id,
-      date: new Date(entry.closed_at).toLocaleString(),
-      items:
-        entry.line_items
-          ?.map((item: any) => `${item.quantity}x ${item.name}`)
-          .join(", ") || "",
-      estimatedTotal: estimateOrderValue(entry.line_items || []),
-    })),
-  };
-}
-
-function estimateOrderValue(lineItems: any[]): number {
-  // Simple estimation based on item types and quantities
-  return lineItems.reduce((total, item) => {
-    const quantity = parseInt(item.quantity) || 1;
-    const estimatedPrice = getEstimatedItemPrice(item.name);
-    return total + quantity * estimatedPrice;
-  }, 0);
-}
-
-function getEstimatedItemPrice(itemName: string): number {
-  // Simple price estimation based on item name patterns
-  const name = itemName.toLowerCase();
-
-  if (name.includes("pizza")) return 15;
-  if (name.includes("burger")) return 12;
-  if (name.includes("salad")) return 10;
-  if (name.includes("fries")) return 5;
-  if (
-    name.includes("drink") ||
-    name.includes("soda") ||
-    name.includes("lemonade") ||
-    name.includes("sprite")
-  )
-    return 3;
-  if (name.includes("cheesecake") || name.includes("dessert")) return 8;
-  if (name.includes("chicken")) return 14;
-  if (name.includes("pasta")) return 13;
-  if (name.includes("fish")) return 16;
-
-  return 8; // Default price
-}
-
-function formatHour(hour: number): string {
-  if (hour === 0) return "12AM";
-  if (hour < 12) return `${hour}AM`;
-  if (hour === 12) return "12PM";
-  return `${hour - 12}PM`;
 }

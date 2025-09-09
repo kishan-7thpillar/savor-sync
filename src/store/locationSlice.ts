@@ -5,15 +5,15 @@ export interface LocationState {
   locations: Array<{
     id: string
     name: string
-    is_active: boolean
+    isActive: boolean
   }>
 }
 
 const initialState: LocationState = {
   selectedLocation: 'all',
   locations: [
-    { id: 'downtown', name: 'Downtown', is_active: true },
-    { id: 'uptown', name: 'Uptown', is_active: true }
+    { id: 'downtown', name: 'Downtown', isActive: true },
+    { id: 'uptown', name: 'Uptown', isActive: true }
   ]
 }
 
