@@ -20,6 +20,7 @@ import {
   Clock,
   FileText,
   Upload,
+  CheckSquare,
 } from "lucide-react";
 
 const navigation = [
@@ -28,6 +29,7 @@ const navigation = [
   { name: "Locations", href: "/dashboard/locations", icon: MapPin },
   // { name: "Operations", href: "/dashboard/operations", icon: Clock },
   { name: "Staff", href: "/dashboard/staff", icon: Users },
+  { name: "Tasks", href: "/dashboard/tasks", icon: CheckSquare },
   { name: "Costs", href: "/dashboard/costs", icon: DollarSign },
   { name: "Inventory", href: "/dashboard/inventory", icon: Package },
   { name: "Wastage", href: "/dashboard/wastage", icon: Trash2 },
