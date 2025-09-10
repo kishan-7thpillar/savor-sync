@@ -38,6 +38,8 @@ export interface HourlySalesData {
   sales: number;
   orders: number;
   averageOrderValue: number;
+  profit: number;
+  profitMargin: number;
 }
 
 export interface ChannelDistribution {
@@ -70,6 +72,8 @@ export interface LocationPerformance {
   averageOrderValue: number;
   topChannel: Order['channel'];
   growth: number;
+  profit: number;
+  profitMargin: number;
 }
 
 export interface DateRange {
@@ -240,20 +244,29 @@ export const getHourlySalesData = (orders: Order[]): HourlySalesData[] => {
       hourLabel: formatHour(hour),
       sales: 0,
       orders: 0,
-      averageOrderValue: 0
+      averageOrderValue: 0,
+      profit: 0,
+      profitMargin: 0
     };
   }
   
   orders.forEach(order => {
     const hour = new Date(order.createdAt).getHours();
+    const orderProfit = order.items.reduce((sum, item) => 
+      sum + (item.menuItem.profit * item.quantity), 0
+    );
+    
     hourlyData[hour].sales += order.totalAmount;
     hourlyData[hour].orders += 1;
+    hourlyData[hour].profit += orderProfit;
   });
   
-  // Calculate average order value and round sales
+  // Calculate averages and profit margins
   Object.values(hourlyData).forEach(hourData => {
     hourData.averageOrderValue = hourData.orders > 0 ? Math.round((hourData.sales / hourData.orders) * 100) / 100 : 0;
+    hourData.profitMargin = hourData.sales > 0 ? Math.round((hourData.profit / hourData.sales) * 10000) / 100 : 0;
     hourData.sales = Math.round(hourData.sales * 100) / 100;
+    hourData.profit = Math.round(hourData.profit * 100) / 100;
   });
   
   return Object.values(hourlyData).filter(hour => hour.sales > 0);
@@ -356,18 +369,23 @@ export const getLocationPerformance = (orders: Order[]): LocationPerformance[] =
         orders: 0,
         averageOrderValue: 0,
         topChannel: 'dine-in',
-        growth: 0
+        growth: 0,
+        profit: 0,
+        profitMargin: 0
       };
     }
     
     locationData[order.locationId].sales += order.totalAmount;
     locationData[order.locationId].orders += 1;
+    locationData[order.locationId].profit += order.items.reduce((sum, item) => sum + (item.menuItem.profit * item.quantity), 0);
   });
   
   // Calculate averages and find top channel for each location
   Object.values(locationData).forEach(location => {
     location.averageOrderValue = location.orders > 0 ? Math.round((location.sales / location.orders) * 100) / 100 : 0;
+    location.profitMargin = location.sales > 0 ? Math.round((location.profit / location.sales) * 10000) / 100 : 0;
     location.sales = Math.round(location.sales * 100) / 100;
+    location.profit = Math.round(location.profit * 100) / 100;
     
     // Find top channel for this location
     const locationOrders = orders.filter(o => o.locationId === location.locationId);

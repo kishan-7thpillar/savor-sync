@@ -290,7 +290,9 @@ export function SalesTrendChart({
         <div className="flex justify-center space-x-6 mt-4">
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-blue-500 rounded-full" />
-            <span className="text-sm text-muted-foreground">Sales ($)</span>
+            <span className="text-sm text-muted-foreground">
+              {dataType === "profit" ? "Profit ($)" : "Revenue ($)"}
+            </span>
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-3 h-3 bg-green-500 rounded-full" />
@@ -358,7 +360,7 @@ export function HourlyHeatmap({ data, onHourClick }: HourlyHeatmapProps) {
                 onClick={() => hourData && onHourClick?.(hourData)}
                 title={`${
                   hourData?.hourLabel || `${hour}:00`
-                }: ${formatCurrency(sales)}`}
+                }: ${formatCurrency(sales)} | Profit: ${formatCurrency(hourData?.profit || 0)} (${hourData?.profitMargin?.toFixed(1) || 0}%)`}
               >
                 {hour}
               </div>
@@ -538,7 +540,7 @@ export function HourlySalesBarChart({
         <ResponsiveContainer width="100%" height={300}>
           <BarChart
             data={data}
-            onClick={(data) => onBarClick?.(data.activePayload?.[0]?.payload)}
+            onClick={(data: any) => onBarClick?.(data?.activePayload?.[0]?.payload)}
             style={{ cursor: onBarClick ? "pointer" : "default" }}
           >
             <CartesianGrid strokeDasharray="3 3" />

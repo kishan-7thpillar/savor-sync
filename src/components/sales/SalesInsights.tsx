@@ -280,8 +280,8 @@ export function SalesInsights({
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {rankingType === 'profitability' 
-                      ? `${formatCurrency(item.totalSales)} revenue`
-                      : `${item.profitMargin.toFixed(1)}% margin`
+                      ? `${formatCurrency(item.totalSales)} revenue • ${item.profitMargin.toFixed(1)}% margin`
+                      : `${formatCurrency(item.totalProfit)} profit • ${item.profitMargin.toFixed(1)}% margin`
                     }
                   </div>
                 </div>
@@ -304,28 +304,92 @@ export function SalesInsights({
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {locationPerformance.map((location, index) => (
                 <div
                   key={location.locationId}
-                  className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="relative p-6 border rounded-xl hover:shadow-lg cursor-pointer transition-all duration-300 bg-gradient-to-br from-white to-gray-50 hover:from-blue-50 hover:to-indigo-50 group"
                   onClick={() => onLocationClick?.(location)}
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className={`w-3 h-3 rounded-full ${
-                      index === 0 ? 'bg-green-500' : index === 1 ? 'bg-yellow-500' : 'bg-gray-400'
+                  {/* Rank Badge */}
+                  <div className={`absolute -top-2 -right-2 w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold ${
+                    index === 0 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' : 
+                    index === 1 ? 'bg-gradient-to-r from-gray-400 to-gray-600' : 
+                    'bg-gradient-to-r from-orange-400 to-orange-600'
+                  }`}>
+                    {index + 1}
+                  </div>
+                  
+                  {/* Location Header */}
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className={`w-4 h-4 rounded-full ${
+                      index === 0 ? 'bg-green-500 shadow-lg shadow-green-200' : 
+                      index === 1 ? 'bg-blue-500 shadow-lg shadow-blue-200' : 
+                      'bg-purple-500 shadow-lg shadow-purple-200'
                     }`} />
                     <div>
-                      <div className="font-medium">{location.locationName}</div>
-                      <div className="text-sm text-muted-foreground capitalize">
-                        Top channel: {location.topChannel} • {location.orders} orders
-                      </div>
+                      <h3 className="font-semibold text-lg text-gray-900 group-hover:text-blue-700 transition-colors">
+                        {location.locationName}
+                      </h3>
+                      <p className="text-sm text-gray-500 capitalize">
+                        Primary: {location.topChannel}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="font-semibold">{formatCurrency(location.sales)}</div>
-                    <div className="text-sm text-muted-foreground">
-                      AOV: {formatCurrency(location.averageOrderValue)}
+                  
+                  {/* Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                      <div className="text-2xl font-bold text-green-600">
+                        {formatCurrency(location.sales)}
+                      </div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Revenue</div>
+                    </div>
+                    <div className="text-center p-3 bg-white rounded-lg border border-gray-100">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {formatCurrency(location.profit)}
+                      </div>
+                      <div className="text-xs text-gray-500 uppercase tracking-wide">Profit</div>
+                    </div>
+                  </div>
+                  
+                  {/* Performance Indicators */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Orders</span>
+                      <span className="font-medium text-gray-900">{location.orders}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">AOV</span>
+                      <span className="font-medium text-gray-900">{formatCurrency(location.averageOrderValue)}</span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm text-gray-600">Profit Margin</span>
+                      <span className={`font-bold ${
+                        location.profitMargin >= 60 ? 'text-green-600' :
+                        location.profitMargin >= 40 ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {location.profitMargin.toFixed(1)}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Profit Margin Bar */}
+                  <div className="mt-4">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-gray-500">Profitability</span>
+                      <span className="text-xs font-medium text-gray-700">{location.profitMargin.toFixed(1)}%</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div 
+                        className={`h-2 rounded-full transition-all duration-500 ${
+                          location.profitMargin >= 60 ? 'bg-gradient-to-r from-green-400 to-green-600' :
+                          location.profitMargin >= 40 ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
+                          'bg-gradient-to-r from-red-400 to-red-600'
+                        }`}
+                        style={{ width: `${Math.min(location.profitMargin, 100)}%` }}
+                      />
                     </div>
                   </div>
                 </div>

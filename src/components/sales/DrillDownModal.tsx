@@ -70,6 +70,12 @@ export function DrillDownModal({
       sum + order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
     0
   );
+  const totalProfit = orders.reduce((sum, order) => 
+    sum + order.items.reduce((itemSum, item) => 
+      itemSum + (item.menuItem.profit * item.quantity), 0
+    ), 0
+  );
+  const profitMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
   const averageOrderValue = orders.length > 0 ? totalSales / orders.length : 0;
 
   const getChannelColor = (channel: Order["channel"]) => {
@@ -135,7 +141,7 @@ export function DrillDownModal({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
           {/* Summary Stats */}
           <div className="lg:col-span-3">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
               <Card>
                 <CardContent className="p-4 text-center">
                   <div className="text-2xl font-bold text-green-600">
@@ -143,6 +149,16 @@ export function DrillDownModal({
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Total Sales
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="p-4 text-center">
+                  <div className="text-2xl font-bold text-emerald-600">
+                    {formatCurrency(totalProfit)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    Total Profit
                   </div>
                 </CardContent>
               </Card>
@@ -171,6 +187,9 @@ export function DrillDownModal({
                   </div>
                   <div className="text-sm text-muted-foreground">
                     Avg Order Value
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {profitMargin.toFixed(1)}% margin
                   </div>
                 </CardContent>
               </Card>
